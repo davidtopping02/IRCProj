@@ -1,5 +1,4 @@
 # import network socket
-from http import server
 import socket
 
 
@@ -18,6 +17,9 @@ class BotClient:
 
     def joinServer(self):
         # ircServer.connect(self.server, self.port, slef.channel, self.nickName, self.password)
+        pass
+
+    def JoinMiniircdTESTING():
         pass
 
     def joinchannel():
