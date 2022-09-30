@@ -1,4 +1,4 @@
-class Server:
+class IRCServer:
     def __init__(self, hostPort, hostIP, connectedClients, rawLog):
         self.hostPort = hostPort
         self.hostIp = hostIP
