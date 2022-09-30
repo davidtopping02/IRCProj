@@ -9,13 +9,13 @@ class Server:
 class Client:
     def __init__(self, nickName, realName, user, port, clientIP,):
         self.nickName = nickName
-        self, realName = realName
+        self.realName = realName
         self.user = user
         self.port = port
         self.clientIP = clientIP
 
 
-class Chamnel:
+class Channel:
     def __init__(self, serverConnection, channelName, channelClients, channelTopic):
         self.serverConnection = serverConnection
         self.channelName = channelName

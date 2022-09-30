@@ -6,7 +6,6 @@
 # -----------------------------------------------------------
 
 # import network socket
-from email import message
 import socket
 
 
