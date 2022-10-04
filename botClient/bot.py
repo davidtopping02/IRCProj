@@ -11,48 +11,89 @@ import socket
 
 class BotClient:
 
-    def __init__(self, nickName, password):
+    def __init__(self, user, nickName, channel, server, port):
 
-        # self.server =  #valid server
-        self.port = 6667
-        self.channel = "#test"
+        # init object attributes
+        self.userName = user
         self.nickName = nickName
-        self.password = password
-        self.IRCSocket = None
+        self.currentChannel = channel
+        self.server = server
+        self.port = port
 
-        # this creates an IRC server object: other part of the project
-        # ircServer = IRCServer()
+        # create socket object to gain access to the server
+        self.netSocket = socket.socket()
 
-    def joinServer(self):
-        # ircServer.connect(self.server, self.port, slef.channel, self.nickName, self.password)
+    def connectToServer(self):
+        """
+        Joins an IRC server from IP address and port, returns false if the connection was unsuccessful
+        """
+        try:
+            # connect to server
+            self.netSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.netSocket.connect((self.server, self.port))
+
+            # initial joining server sequence
+            self.user(self.userName)
+            self.nick(self.nickName)
+            self.join(self.currentChannel)
+            return True
+
+        except socket.error:
+            # cannot connect to the server
+            return False
+
+    # Wrapper function to send a command along with arguments to the irc server
+    def sendCMD(self, cmd, args):
+
+        try:
+            # sends the commands with args to the server
+            self.netSocket.send((cmd + " " + args + "\r\n").encode())
+
+            # prints the command with args as well
+            print(cmd + " " + args + "\n")
+        except:
+            print("Message could not be sent, please try again")
+
+    # revieves any messages from the server
+    def getResponse(self):
+        try:
+            return self.netSocket.recv(2000).decode("ascii")
+        except:
+            return "Error recieving data from the server"
+
+    def join(self, newChan=None):
+        self.currentChannel = newChan
+        self.sendCMD("JOIN", newChan)
+
+    def part(self):
+        # used to leave a channel
         pass
 
-    def joinMiniircdTESTING(self):
-        """
-        Joins to a miniircd server, used for testing the bot functionallity but does it will connect to our own IRC server for submission
-        """
+    def quit(self, message=None):
+        # used to leave a server with an optional leaving message
+        pass
 
-        # creates socket object
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as self.IRCSocket:
+    def list(self):
+        # lists all channels on the current network
+        pass
 
-            # encode data for tramsmission
-            delimeter = " : ".encode()
-            user = self.nickName.encode()
-            message = "test123".encode()
+    # changes/sends bots nickname
+    def nick(self, newNick=None):
+        self.nickName = newNick
+        self.sendCMD("NICK", self.nickName)
 
-            # connect to IRC server
-            self.IRCSocket.connect(("10.0.24.4", self.port))
+    # sets the user name of the bot
+    def user(self, user=None):
+        self.userName = user
+        self.sendCMD("USER", self.nickName + " " + self.nickName +
+                     " " + self.nickName + " " + self.userName)
 
-            # send message
-            self.IRCSocket.sendall(user + delimeter + message)
+    def names(self, channel):
+        # shows the nicks of all users on channel parameter
+        pass
 
-            while (True):
-                message = input().encode()
-                self.IRCSocket.sendall(user + delimeter + message)
-                data = self.IRCSocket.recv(1024)
-                print(f"Received {data!r}")
-
-    def joinchannel():
+    def msg(self, nickName, message):
+        # sends a private message to a user
         pass
 
     def respondPrivMsg():
@@ -62,11 +103,15 @@ class BotClient:
         pass
 
 
-bot = BotClient("david", "test")
-bot.joinMiniircdTESTING()
+# init bot client and connect to server
+bot = BotClient("thisIsARealPerson", "bottyBot123",
+                "#mainChan", "10.0.42.17", 6667)
 
-# conncet to server
+# running bot sequence
+if bot.connectToServer():
 
-# get response from server
-
-# so on...
+    while True:
+        recievedText = bot.getResponse()
+        print(recievedText)
+else:
+    print("could not connect to server")
