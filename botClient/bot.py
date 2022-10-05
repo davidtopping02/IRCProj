@@ -6,6 +6,7 @@
 # -----------------------------------------------------------
 
 # import network socket
+from gettext import find
 import socket
 from time import sleep
 
@@ -35,7 +36,7 @@ class BotClient:
         """
         try:
             # connect to server
-            self.netSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.netSocket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
             self.netSocket.connect((self.server, self.port))
 
             # initial joining server sequence
@@ -108,11 +109,26 @@ class BotClient:
     def pongReply(self):
         self.sendCMD("PONG", "reply")
 
+    # parses a multiline server response and returns the desired line based on input code
+    def parseRecieveMessage(self, recievedMessage, code):
+        recievedMessage = recievedMessage.split("\n")
+
+        # loop through each line in the list
+        for x in recievedMessage:
+
+            # return if code hit is true
+            if x.find(code) > 0:
+                return x
+
+        return -1
+
     # running proccess of the bot
+
     def runBot(self):
 
         # gets the response from the server
         recievedText = self.getResponse()
+        recievedTextList = recievedText.split("\n")
         print(recievedText)
 
         # error recived
@@ -122,16 +138,31 @@ class BotClient:
         elif "PING" in recievedText:
             self.pongReply()
             return True
+
         # 353s contains channel users
         elif "353" in recievedText:
-            pass
+
+            # full line of 353 from
+            line = self.parseRecieveMessage(recievedText, "353")
+
+            # parsing the line to and puts the current channel users in the object field
+            self.channelUsers = ((line.split(self.currentChannel + " :"))
+                                 [1][: - 1]).split(" ")
+
+            print(self.channelUsers)
+
         else:
             sleep(2)
 
 
+# IPv4
 # init bot client object
+# bot = BotClient("thisIsARealPerson", "realHuman",
+#                 "#test", "10.0.42.17", 6667)
+
+# IPv6
 bot = BotClient("thisIsARealPerson", "realHuman",
-                "#test", "10.0.42.17", 6667)
+                "#test", "fc00:1337::17", 6667)
 
 # running bot sequence
 if bot.connectToServer():
