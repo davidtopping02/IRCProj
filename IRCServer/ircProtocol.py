@@ -26,18 +26,28 @@ class IRCServer:
             print(f"Connected by {addr}")
             start_new_thread(self.multi_threaded_client, (conn, ))
             self.connectedClients += 1
+
             # Adding client to client list
             client = Client(addr[1], addr[0])
             self.clientList.append(client)
+
+            # Printing entire client list
             for i in range(len(self.clientList)):
                 self.clientList[i].test()
 
             # self.clientList[1].test()
             print('Clients Connected : ' + str(self.connectedClients))
-            data = conn.recv(1024)
+            data = conn.recv(1024).decode('UTF-8')
             if not data:
                 break
-            print(data.decode('UTF-8'))
+            print(data)
+
+            # Testing for NICK
+            print(data.split(" "))
+            if data.split(" ")[0] == "NICK":
+
+                self.clientList[0].setNick(data.split(" ")[1])
+
             # print(b'data')
 
             # if ("JOIN" in data.decode('utf-8')):
@@ -70,9 +80,9 @@ class IRCServer:
 
 class Client:
     def __init__(self, port, clientIP,):
-        self.nickName = b""
-        self.realName = b""
-        self.user = b""
+        self.nickName = ""
+        self.realName = ""
+        self.user = ""
         self.port = port
         self.clientIP = clientIP
         self.connectedChannels = []
@@ -80,6 +90,11 @@ class Client:
     def test(self):
         print(self.port)
         print(self.clientIP)
+        print(self.nickName)
+
+    def set_nick(self, nick):
+
+        self.nickName = nick
 
 
 class Channel:
