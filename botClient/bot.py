@@ -7,6 +7,7 @@
 
 # import network socket
 import socket
+from time import sleep
 
 
 class BotClient:
@@ -19,6 +20,11 @@ class BotClient:
         self.currentChannel = channel
         self.server = server
         self.port = port
+        self.channelUsers = None
+
+        # TODO
+        # self.hostName = None
+        # self.
 
         # create socket object to gain access to the server
         self.netSocket = socket.socket()
@@ -50,7 +56,7 @@ class BotClient:
             self.netSocket.send((cmd + " " + args + "\r\n").encode())
 
             # prints the command with args as well
-            print(cmd + " " + args + "\n")
+            print(cmd + " " + args)
         except:
             print("Message could not be sent, please try again")
 
@@ -61,57 +67,77 @@ class BotClient:
         except:
             return "Error recieving data from the server"
 
+    # joins a sever
     def join(self, newChan=None):
         self.currentChannel = newChan
         self.sendCMD("JOIN", newChan)
 
+    # leave a channel
     def part(self):
-        # used to leave a channel
         pass
 
+    # leave a server with an optional leaving message
     def quit(self, message=None):
-        # used to leave a server with an optional leaving message
         pass
 
+    # lists all channels on the current network
     def list(self):
-        # lists all channels on the current network
+
         pass
 
-    # changes/sends bots nickname
+    # changes nickname
     def nick(self, newNick=None):
         self.nickName = newNick
         self.sendCMD("NICK", self.nickName)
 
-    # sets the user name of the bot
+    # sets the user name
     def user(self, user=None):
         self.userName = user
         self.sendCMD("USER", self.nickName + " " + self.nickName +
                      " " + self.nickName + " " + self.userName)
 
+    # shows the nicks of all users on channel parameter
     def names(self, channel):
-        # shows the nicks of all users on channel parameter
         pass
 
-    def msg(self, nickName, message):
-        # sends a private message to a user
-        pass
+    # sends a private message to a user
+    def privMsg(self, nickName, message):
+        self.sendCMD("PRIVMSG", nickName + " " + message)
 
-    def respondPrivMsg():
-        pass
+    # pong function replies to the ping from server
+    def pongReply(self):
+        self.sendCMD("PONG", "reply")
 
-    def respondChannelCMD():
-        pass
+    # running proccess of the bot
+    def runBot(self):
+
+        # gets the response from the server
+        recievedText = self.getResponse()
+        print(recievedText)
+
+        # error recived
+        if "ERROR" in recievedText:
+            return False
+        # ping recieved
+        elif "PING" in recievedText:
+            self.pongReply()
+            return True
+        # 353s contains channel users
+        elif "353" in recievedText:
+            pass
+        else:
+            sleep(2)
 
 
-# init bot client and connect to server
-bot = BotClient("thisIsARealPerson", "bottyBot123",
-                "#mainChan", "10.0.42.17", 6667)
+# init bot client object
+bot = BotClient("thisIsARealPerson", "realHuman",
+                "#test", "10.0.42.17", 6667)
 
 # running bot sequence
 if bot.connectToServer():
 
     while True:
-        recievedText = bot.getResponse()
-        print(recievedText)
+
+        bot.runBot()
 else:
     print("could not connect to server")
