@@ -23,17 +23,11 @@ class BotClient:
         self.port = port
         self.channelUsers = None
 
-        # TODO
-        # self.hostName = None
-        # self.
-
         # create socket object to gain access to the server
         self.netSocket = socket.socket()
 
+    # Joins an IRC server from IP address and port, returns false if the connection was unsuccessful
     def connectToServer(self):
-        """
-        Joins an IRC server from IP address and port, returns false if the connection was unsuccessful
-        """
         try:
             # connect to server
             self.netSocket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -73,17 +67,16 @@ class BotClient:
         self.currentChannel = newChan
         self.sendCMD("JOIN", newChan)
 
-    # leave a channel
+    # TODO leave a channel
     def part(self):
         pass
 
-    # leave a server with an optional leaving message
-    def quit(self, message=None):
+    # TODO leave a server with an optional leaving message
+    def quit(self, message):
         pass
 
-    # lists all channels on the current network
+    # TODO lists all channels on the current network
     def list(self):
-
         pass
 
     # changes nickname
@@ -97,7 +90,7 @@ class BotClient:
         self.sendCMD("USER", self.nickName + " " + self.nickName +
                      " " + self.nickName + " " + self.userName)
 
-    # shows the nicks of all users on channel parameter
+    # TODO shows the nicks of all users on channel parameter
     def names(self, channel):
         pass
 
@@ -123,7 +116,6 @@ class BotClient:
         return -1
 
     # running proccess of the bot
-
     def runBot(self):
 
         # gets the response from the server
@@ -155,7 +147,7 @@ class BotClient:
             sleep(2)
 
 
-# IPv4
+# used for an IPv4 connection (for testing)
 # init bot client object
 # bot = BotClient("thisIsARealPerson", "realHuman",
 #                 "#test", "10.0.42.17", 6667)
@@ -168,7 +160,6 @@ bot = BotClient("thisIsARealPerson", "realHuman",
 if bot.connectToServer():
 
     while True:
-
         bot.runBot()
 else:
     print("could not connect to server")
