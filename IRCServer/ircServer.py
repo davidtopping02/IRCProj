@@ -104,7 +104,7 @@ class IRCServer:
 
             # prints and calls every line seperately
             for x in range(len(data2)):
-                print("Server: " + data2[x])
+                print(data2[x])
                 self.command(data2[x], client)
 
         s.close()
