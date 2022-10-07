@@ -141,7 +141,8 @@ class BotClient:
             self.channelUsers = ((line.split(self.currentChannel + " :"))
                                  [1][: - 1]).split(" ")
 
-            print(self.channelUsers)
+            # for testing
+            # print(self.channelUsers)
 
         else:
             sleep(2)
