@@ -122,7 +122,7 @@ class IRCServer:
 
             # prints and calls every line seperately
             for x in range(len(response[2])):
-                print("Multi" + response2[x])
+                print(response2[x])
                 self.command(response2[x], self.clientList[threadNum-1])
 
             if not data:
