@@ -26,8 +26,8 @@ class IRCServer:
     def command(self, response, user):
         processedMessage = response.split(" ")
         key = processedMessage[0]
-        
-        #if key is join, join channel
+
+        # if key is join, join channel
         if key == 'JOIN':
             print('joining')
             if (processedMessage[1] not in self.channelList):
@@ -37,28 +37,29 @@ class IRCServer:
                 channel.joinChannel(channel, user)
                 print("Successfully joined: " + channel.channelName)
 
-        #if key is part, leave channel
+        # if key is part, leave channel
         if key == 'PART':
             print('quit')
             if (processedMessage[1] not in self.channelList):
                 print("invalid channel, please try again")
             else:
-                leaveChannel(processedMessage, user)
+                # TODO not for mid term submission
+                # channel = leaveChannel(processedMessage, user)
                 print("Successfully disconnected")
 
         if key == 'MODE':
             print('mode')
 
-        #if key is nick, set nickname
+        # if key is nick, set nickname
         if key == 'NICK':
             user.set_nick(processedMessage[1])
             if user.nickName == processedMessage[1]:
                 print("Your new Nickname is: " + user.nickName)
 
-        #if key is USER, set fields of Client
+        # if key is USER, set fields of Client
         if key == 'USER':
             user.userName = (processedMessage[1])
-            user.realName = processedMessage[4].replace(':','')
+            user.realName = processedMessage[4].replace(':', '')
             print('Your username: ' + user.userName)
             print('Your realname: ' + user.realName)
         if key == 'PRIVMSG':
@@ -74,20 +75,20 @@ class IRCServer:
     # Function to start the server
     def startServer(self):
 
-        #makes new socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # makes new socket
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
-        #binds socket to ip
+        # binds socket to ip
         s.bind((self.hostIP, self.hostPort))
         s.listen()
         print(f"Server Listening on {self.hostPort}")
 
         while True:
-            #client is connected by address
+            # client is connected by address
             conn, addr = s.accept()
             print(f"Connected by {addr}")
             self.connectedClients += 1
-            #makes new thread for client
+            # makes new thread for client
             start_new_thread(self.multi_threaded_client,
                              (conn, self.connectedClients))
 
@@ -95,14 +96,13 @@ class IRCServer:
             client = Client(addr[1], addr[0])
             self.clientList.append(client)
 
-        
             print('Clients Connected : ' + str(self.connectedClients))
             data = conn.recv(1024).decode('UTF-8')
             data2 = data.split("\n")
             if not data:
                 break
 
-            #prints and calls every line seperately
+            # prints and calls every line seperately
             for x in range(len(data2)):
                 print("Server: " + data2[x])
                 self.command(data2[x], client)
@@ -113,14 +113,14 @@ class IRCServer:
     def multi_threaded_client(self, connection, threadNum):
         #connection.send(str.encode('Server is working:'))
         while True:
-            #recieves data
+            # recieves data
             data = connection.recv(2048)
             #response = 'Server message: ' + data.decode('utf-8')
             # sends message to client
             response = data.decode('ascii')
             response2 = response.split("\n")
 
-            #prints and calls every line seperately
+            # prints and calls every line seperately
             for x in range(len(response[2])):
                 print("Multi" + response2[x])
                 self.command(response2[x], self.clientList[threadNum-1])
@@ -142,7 +142,7 @@ class Client:
         self.connectedChannels = []
 
     # used for testing new instances of client
-    #def test(self):
+    # def test(self):
      #   print(self.port)
       #  print(self.clientIP)
        # print(self.nickName)
@@ -160,20 +160,20 @@ class Channel:
         self.channelClients = []
         #self.channelTopic = channelTopic
 
-    #join Channel function, currently under development
+    # join Channel function, currently under development
     def joinChannel(self, channel, client):
         self.channelClients.append(client)
-        #for i in range(len(self.channelClients)):
-         #   print("YO Client Name" + self.channelClients[i].nickName)
+        # for i in range(len(self.channelClients)):
+        #   print("YO Client Name" + self.channelClients[i].nickName)
 
-    #leave Channel funciton, under development
+    # leave Channel funciton, under development
     def leaveChannel(self, channel, client):
         print('leaving the channel')
 
 
 # Creating server instance
 def startServer():
-    server = IRCServer(4443, "127.0.0.1", 0)
+    server = IRCServer(6667, "fc00:1337::17", 0)
     server.startServer()
 
 
