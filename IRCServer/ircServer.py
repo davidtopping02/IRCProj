@@ -1,18 +1,28 @@
+# -----------------------------------------------------------
+# Creates an Internet Relay Chat server that multiple clients can connect to and interact with
+#
+# (C) Christian Zlatanov, Caleb Harmon
+# https://github.com/davidtopping02/IRCProj
+# -----------------------------------------------------------
+
+# imports
 import socket
 import os
 from webbrowser import open_new
 from _thread import *
 
+
+# Internet Relay Server class that contains the basic functionallity
 class IRCServer:
     def __init__(self, hostPort, hostIP, connectedClients):
         self.hostPort = hostPort
         self.hostIP = hostIP
         self.connectedClients = connectedClients
         self.clientList = []
-        self.channelList= []
+        self.channelList = []
         #self.rawLog = rawLog
 
-    #command function to execute and proccess the user response
+    # command function to execute and proccess the user response
     def command(self, response, user):
         processedMessage = response.split(" ")
         key = processedMessage[0]
@@ -22,7 +32,6 @@ class IRCServer:
             if (processedMessage[1] not in self.channelList):
                 channel = Channel(processedMessage[1])
                 self.channelList.append(channel.channelName)
-
 
                 channel.joinChannel(channel, user)
                 print("Successfully joined: " + channel.channelName)
@@ -42,11 +51,11 @@ class IRCServer:
                 print("Your new Nickname is: " + user.nickName)
         if key == 'USER':
             print('user')
-            #user.set_nick(processedMessage[1])
-            #actualName = processedMessage[4]:1
+            # user.set_nick(processedMessage[1])
+            # actualName = processedMessage[4]:1
         if key == 'PRIVMSG':
             print('private message')
-                #sendPriv()
+            # sendPriv()
         if key == 'WHO':
             print('who')
         if key == 'PING':
@@ -65,7 +74,8 @@ class IRCServer:
             conn, addr = s.accept()
             print(f"Connected by {addr}")
             self.connectedClients += 1
-            start_new_thread(self.multi_threaded_client, (conn, self.connectedClients))
+            start_new_thread(self.multi_threaded_client,
+                             (conn, self.connectedClients))
 
             # Adding client to client list
             client = Client(addr[1], addr[0])
@@ -81,9 +91,8 @@ class IRCServer:
             if not data:
                 break
 
-            #channel = Channel("#default")
-            #self.channelList.append(channel.channelName)
-
+            # channel = Channel("#default")
+            # self.channelList.append(channel.channelName)
 
             #channel.joinChannel(channel, client)
             #channel.leaveChannel(channel, client)
@@ -91,24 +100,23 @@ class IRCServer:
             print(data)
             #self.command(data, client)
 
-            #testing for NICK
+            # testing for NICK
             #dataArr= data.split(" ")
-            #if dataArr[0] == "NICK":
-                #self.clientList[0].set_nick("poop")
-                #print("new nick: " + self.clientList[0].nickName)
+            # if dataArr[0] == "NICK":
+            # self.clientList[0].set_nick("poop")
+            #print("new nick: " + self.clientList[0].nickName)
 
-            
-    
         s.close()
     # Allows for multi-client connection, taken from https://www.positronx.io/create-socket-server-with-multiple-clients-in-python/
-    def multi_threaded_client(self, connection,threadNum):
+
+    def multi_threaded_client(self, connection, threadNum):
         #connection.send(str.encode('Server is working:'))
         while True:
             data = connection.recv(2048)
             #response = 'Server message: ' + data.decode('utf-8')
             # sends message to client
             response = data.decode('ascii')
-           
+
             print("Multi: " + response)
 
             self.command(response, self.clientList[threadNum-1])
@@ -118,6 +126,7 @@ class IRCServer:
         connection.close()
 
 
+# Created whenever a client joins the IRC server
 class Client:
     def __init__(self, port, clientIP,):
         self.nickName = "test"
@@ -136,9 +145,10 @@ class Client:
         self.nickName = nick
 
 
+# Created when a channel is created for the IRC
 class Channel:
     def __init__(self, channelName):
-        
+
         #self.serverConnection = serverConnection
         self.channelName = channelName
         self.channelClients = []
@@ -151,10 +161,6 @@ class Channel:
 
     def leaveChannel(self, channel, client):
         print('leaving the channel')
-        
-
-
-
 
 
 # Creating server instance

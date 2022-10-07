@@ -1,11 +1,11 @@
 # -----------------------------------------------------------
-# Creates a bot that acts as a client that can interact with an IRC server
+# Creates a bot acting as a client for an Internet Relay Chat server
 #
-# (C) David Topping, Christian Zlatanov, Caleb Harmon, Victor Iyida
+# (C) David Topping
 # https://github.com/davidtopping02/IRCProj
 # -----------------------------------------------------------
 
-# import network socket
+# imports
 from gettext import find
 import socket
 from time import sleep
