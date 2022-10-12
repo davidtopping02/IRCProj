@@ -20,6 +20,7 @@ class IRCServer:
         self.connectedClients = connectedClients
         self.clientList = []
         self.channelList = []
+        self.clientDetails = []
         #self.rawLog = rawLog
 
     # command function to execute and proccess the user response
@@ -32,20 +33,23 @@ class IRCServer:
             print('joining')
             if (processedMessage[1] not in self.channelList):
                 channel = Channel(processedMessage[1])
-                self.channelList.append(channel.channelName)
+                self.channelList.append(channel.channelName.strip("\r"))
 
                 channel.joinChannel(channel, user)
                 print("Successfully joined: " + channel.channelName)
+                print(self.channelList)
 
         # if key is part, leave channel
         if key == 'PART':
             print('quit')
+            #channel = processedMessage[1].strip("\r")
             if (processedMessage[1] not in self.channelList):
                 print("invalid channel, please try again")
             else:
                 # TODO not for mid term submission
                 # channel = leaveChannel(processedMessage, user)
                 print("Successfully disconnected")
+                self.channelList.remove(processedMessage[1])
 
         if key == 'MODE':
             print('mode')
@@ -86,6 +90,8 @@ class IRCServer:
         while True:
             # client is connected by address
             conn, addr = s.accept()
+            if conn:
+                self.clientDetails.append(conn)
             print(f"Connected by {addr}")
             self.connectedClients += 1
             # makes new thread for client
@@ -127,7 +133,9 @@ class IRCServer:
 
             if not data:
                 break
-            connection.sendall(str.encode(response))
+
+            for clients in self.clientDetails:
+                clients.send(str.encode(response))
         connection.close()
 
 
@@ -173,7 +181,7 @@ class Channel:
 
 # Creating server instance
 def startServer():
-    server = IRCServer(6667, "fc00:1337::17", 0)
+    server = IRCServer(6667, "::1", 0)
     server.startServer()
 
 
