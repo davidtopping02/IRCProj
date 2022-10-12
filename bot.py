@@ -6,9 +6,9 @@
 # -----------------------------------------------------------
 
 # imports
-from gettext import find
-import socket
 from time import sleep
+import socket
+from ircServer import Channel
 
 
 class BotClient:
@@ -18,10 +18,9 @@ class BotClient:
         # init object attributes
         self.userName = user
         self.nickName = nickName
-        self.currentChannel = channel
         self.server = server
         self.port = port
-        self.channelUsers = None
+        self.channel = Channel(channel)
 
         # create socket object to gain access to the server
         self.netSocket = socket.socket()
@@ -36,7 +35,7 @@ class BotClient:
             # initial joining server sequence
             self.user(self.userName)
             self.nick(self.nickName)
-            self.join(self.currentChannel)
+            self.join(self.channel.channelName)
             return True
 
         except socket.error:
@@ -67,6 +66,9 @@ class BotClient:
         self.currentChannel = newChan
         self.sendCMD("JOIN", newChan)
 
+        # store users currently in channel after joining
+        self.names()
+
     # TODO leave a channel
     def part(self):
         pass
@@ -90,9 +92,9 @@ class BotClient:
         self.sendCMD("USER", self.nickName + " " + self.nickName +
                      " " + self.nickName + " " + self.userName)
 
-    # TODO shows the nicks of all users on channel parameter
-    def names(self, channel):
-        pass
+    # shows the nicks of all users on channel parameter
+    def names(self):
+        self.sendCMD("NAMES", self.channel.channelName)
 
     # sends a private message to a user
     def privMsg(self, nickName, message):
@@ -120,7 +122,6 @@ class BotClient:
 
         # gets the response from the server
         recievedText = self.getResponse()
-        recievedTextList = recievedText.split("\n")
         print(recievedText)
 
         # error recived
