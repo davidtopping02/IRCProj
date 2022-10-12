@@ -177,4 +177,6 @@ def startServer():
     server.startServer()
 
 
-startServer()
+# this is a work around to use the channel module from this file
+if __name__ == "__main__":
+    startServer()
