@@ -87,10 +87,11 @@ class IRCServer:
             # client is connected by address
             conn, addr = s.accept()
             print(f"Connected by {addr}")
-            self.connectedClients += 1
             # makes new thread for client
             start_new_thread(self.multi_threaded_client,
                              (conn, self.connectedClients))
+
+            conn.sendall(str.encode("Welcome New User"))
 
             # Adding client to client list
             client = Client(addr[1], addr[0])
@@ -111,7 +112,7 @@ class IRCServer:
     # Allows for multi-client connection, taken from https://www.positronx.io/create-socket-server-with-multiple-clients-in-python/
 
     def multi_threaded_client(self, connection, threadNum):
-        #connection.send(str.encode('Server is working:'))
+
         while True:
             # recieves data
             data = connection.recv(2048)
@@ -127,7 +128,7 @@ class IRCServer:
 
             if not data:
                 break
-            connection.sendall(str.encode(response))
+            connection.sendall(str.encode("Welcome New User"))
         connection.close()
 
 
@@ -173,7 +174,7 @@ class Channel:
 
 # Creating server instance
 def startServer():
-    server = IRCServer(6667, "fc00:1337::17", 0)
+    server = IRCServer(6667, "::1", 0)
     server.startServer()
 
 
