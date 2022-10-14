@@ -6,8 +6,10 @@
 # -----------------------------------------------------------
 
 # imports
+from multiprocessing import connection
 from time import sleep
 import socket
+from urllib import response
 from ircServer import Channel
 
 
@@ -20,6 +22,7 @@ class BotClient:
         self.nickName = nickName
         self.server = server
         self.port = port
+        self.serverName = ""
         self.channel = Channel(channel)
 
         # create socket object to gain access to the server
@@ -35,6 +38,8 @@ class BotClient:
             # initial joining server sequence
             self.user(self.userName)
             self.nick(self.nickName)
+            self.responseHandler(True)
+
             self.join(self.channel.channelName)
             return True
 
@@ -42,15 +47,47 @@ class BotClient:
             # cannot connect to the server
             return False
 
-    # Wrapper function to send a command along with arguments to the irc server
-    def sendCMD(self, cmd, args):
+    # handles all responses recieved by the server
+    def responseHandler(self, newConnection, line=None):
 
+        # getting server name if new connection
+        if newConnection == True:
+            response = (self.getResponse()).split('\r\n')
+            self.serverName = response[0].split(' ')[0][1:]
+
+            for line in response:
+                self.responseHandler(False, line)
+
+        # handling each line of the resonse
+        if line != '':
+            # TODO TEMPORTARY TRY-CATCH TILL WE FIGURE OUT THE FORMAT OF OTHER TYPES OF MESSAGES
+            try:
+                # getting response code
+                responseCode = line.split(self.serverName + ' ')[1][0:3]
+
+                # RPL_NAMREPLY
+                if responseCode == '353':
+                   # updating the channel users
+                    self.channelUsers = ((line.split(self.currentChannel + " :"))
+                                         [1]).split(" ")
+
+                else:
+                    # TODO print to log file as well
+                    print('<<' + line)
+                    # takes out response codees
+                    # print('<<' + line.split(' :')[1])
+                return True
+            except:
+                return False
+
+    # wrapper function to send a command along with arguments to the irc server
+    def sendCMD(self, cmd, args):
         try:
             # sends the commands with args to the server
             self.netSocket.send((cmd + " " + args + "\r\n").encode())
 
             # prints the command with args as well
-            print(cmd + " " + args)
+            print(">>" + cmd + " " + args)
         except:
             print("Message could not be sent, please try again")
 
@@ -61,24 +98,13 @@ class BotClient:
         except:
             return "Error recieving data from the server"
 
-    # joins a sever
+    # joins a channel
     def join(self, newChan=None):
         self.currentChannel = newChan
         self.sendCMD("JOIN", newChan)
 
-        # store users currently in channel after joining
-        self.names()
-
-    # TODO leave a channel
-    def part(self):
-        pass
-
     # TODO leave a server with an optional leaving message
     def quit(self, message):
-        pass
-
-    # TODO lists all channels on the current network
-    def list(self):
         pass
 
     # changes nickname
@@ -89,8 +115,8 @@ class BotClient:
     # sets the user name
     def user(self, user=None):
         self.userName = user
-        self.sendCMD("USER", self.nickName + " " + self.nickName +
-                     " " + self.nickName + " " + self.userName)
+        self.sendCMD("USER", self.nickName + "1 " + self.nickName +
+                     "2 " + self.nickName + "3 " + self.userName)
 
     # shows the nicks of all users on channel parameter
     def names(self):
@@ -120,39 +146,24 @@ class BotClient:
     # running proccess of the bot
     def runBot(self):
 
-        # gets the response from the server
-        recievedText = self.getResponse()
-        print(recievedText)
+        # get response as list
+        response = (self.getResponse()).split('\r\n')
 
-        # error recived
-        if "ERROR" in recievedText:
-            return False
-        # ping recieved
-        elif "PING" in recievedText:
-            self.pongReply()
+        if response != ['']:
+            for line in response:
+
+                if self.responseHandler(False, line):
+                    continue
+                else:
+                    # ping recieved
+                    if "PING" in line:
+                        self.pongReply()
+                        return True
+
             return True
-
-        # 353s contains channel users
-        elif "353" in recievedText:
-
-            # full line of 353 from
-            line = self.parseRecieveMessage(recievedText, "353")
-
-            # parsing the line to and puts the current channel users in the object field
-            self.channelUsers = ((line.split(self.currentChannel + " :"))
-                                 [1][: - 1]).split(" ")
-
-            # for testing
-            # print(self.channelUsers)
-
         else:
-            sleep(2)
+            return False
 
-
-# used for an IPv4 connection (for testing)
-# init bot client object
-# bot = BotClient("thisIsARealPerson", "realHuman",
-#                 "#test", "10.0.42.17", 6667)
 
 # IPv6
 bot = BotClient("thisIsARealPerson", "realHuman",
@@ -162,6 +173,27 @@ bot = BotClient("thisIsARealPerson", "realHuman",
 if bot.connectToServer():
 
     while True:
-        bot.runBot()
+
+        if bot.runBot() == False:
+            print("ERROR: CONNECTION TO SERVER LOST\n")
+
+            # 3 attempts to reconnect to the server
+            for attempt in range(3):
+                print("Attempt (%d), trying to reconnect to the server...\n" %
+                      (attempt+1))
+
+                # delay incase required for server to restart
+                sleep(2)
+                if bot.connectToServer() != False:
+                    break
+                elif attempt >= 2:
+                    print('AFTER 3 ATTEMPTS THE CONNECTION COULD NOT BE ESTABLISHED')
+                    exit(1)
+                else:
+                    continue
+
+        else:
+            continue
+
 else:
     print("could not connect to server")
