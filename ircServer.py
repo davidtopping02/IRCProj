@@ -11,6 +11,8 @@ import os
 from webbrowser import open_new
 from _thread import *
 
+from pyproj import proj_version_str
+
 
 # Internet Relay Server class that contains the basic functionallity
 class IRCServer:
@@ -27,6 +29,7 @@ class IRCServer:
     def command(self, response, user):
         processedMessage = response.split(" ")
         key = processedMessage[0]
+        # print(processedMessage)
 
         # if key is join, join channel
         if key == 'JOIN':
@@ -37,6 +40,8 @@ class IRCServer:
 
                 channel.joinChannel(channel, user)
                 print("Successfully joined: " + channel.channelName)
+                msg = f":{user.nickName}!blank@{user.clientIP} JOIN {channel.channelName}\r\n"
+                self.server_send(msg)
                 print(self.channelList)
 
         # if key is part, leave channel
@@ -48,6 +53,8 @@ class IRCServer:
             else:
                 # TODO not for mid term submission
                 # channel = leaveChannel(processedMessage, user)
+                msg = f":{user.nickName}!@{user.clientIP} PART {processedMessage[1]}\r\n"
+                self.server_send(msg)
                 print("Successfully disconnected")
                 self.channelList.remove(processedMessage[1])
 
@@ -114,7 +121,10 @@ class IRCServer:
                 self.command(data2[x], client)
 
         s.close()
-    # Allows for multi-client connection, taken from https://www.positronx.io/create-socket-server-with-multiple-clients-in-python/
+    # Allows for multi-client connection, adapted from https://www.positronx.io/create-socket-server-with-multiple-clients-in-python/
+
+    def server_send(self, command):
+        self.clientDetails[0].send(bytes(command.encode()))
 
     def multi_threaded_client(self, connection, threadNum):
         #connection.send(str.encode('Server is working:'))
