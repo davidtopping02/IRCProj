@@ -1,0 +1,27 @@
+E)
+XXX-The bot can connect to a miniircd server, handle errors and stay connectedXXX
+XXX-Bot instantiates datastructures required for network communicationXXX
+XXX-Bot establishes the connection with the serverXXX
+XXX-Bot correctly identify himself to the miniircd serverXXX
+XXX-Keeping the connection to miniircd alive, and managing it efficientlyXXX
+-Reacting to common connection errors or network issues 
+_____________________________________________________________________________________________
+F)
+-The bot can join a channel, retain the user list and keep track of users
+XXX-Bot correctly request to join the channel and hexchat can display it joining the channelXXX
+-Retaining the initial information sent by miniircd about the channel and its users
+-Updating information about the channel users efficiently when they join or leave
+_____________________________________________________________________________________________
+G)
+The bot responds to private messages with random facts delivered privately in hexchat
+Bot correctly receive incoming private messages from miniircd
+Bot correctly process incoming private messages from miniircd
+The sender receive a random fact in private and hexchat can display it properly in the correct private tab
+Random facts are stored in a local file or retrieved from the web
+_____________________________________________________________________________________________
+H)
+-The bot responds to bot commands on the channel and hexchat can display it correctly in the channel tab
+-Bot correctly receive incoming channel messages from miniircd 
+-Bot correctly process incoming channel messages from miniircd
+-Responding correctly to the !hello command (greeting user with their name and time/day) and hexchat can display it properly in the correct channel tab
+-Responding correctly to the !slap command (slapping a random user in the channel with a trout) and hexchat can display it properly in the correct channel tab
