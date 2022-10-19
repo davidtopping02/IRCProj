@@ -76,8 +76,6 @@ class BotClient:
         self.channel.channelName = newChan
         self.sendCMD('JOIN', newChan)
 
-    # TODO leave a server with an optional leaving message
-    def quit(self, message):
         pass
 
     # changes nickname
@@ -92,10 +90,6 @@ class BotClient:
         self.userName = user
         self.sendCMD('USER', self.nickName + '1 ' + self.nickName +
                      '2 ' + self.nickName + '3 ' + self.userName)
-
-    # shows the nicks of all users on channel parameter
-    def names(self):
-        self.sendCMD('NAMES', self.channel.channelName)
 
     # sends a private message to a user
     def privMsg(self, target, message):
@@ -131,24 +125,31 @@ class BotClient:
             # ensuring line has prefix
             if line[0] == ':':
 
-                # format- prefix:command:args
-                line = line.split(' ', 2)
+                try:
+                    # format- prefix:command:args
+                    line = line.split(' ', 2)
 
-                # set channel topic
-                if line[1] == '331':
-                    pass
-                elif line[1] == '353':
-                    self.namesHandler(line[2])
-                elif line[1] == '433':
-                    self.repeatedNickHandler()
-                elif line[1] == 'JOIN':
-                    self.JOINHandler(line[0], line[2])
-                elif line[1] == 'QUIT':
-                    self.QUITHandler(line[0])
-                elif line[2] == self.channel.channelName + ' :!hello':
-                    self.helloHandler()
-                elif line[1] == 'PRIVMSG':
-                    self.privMsgHandler(line[0], line[1], line[2])
+                    # set channel topic
+                    if line[1] == '331':
+                        pass
+                    elif line[1] == '353':
+                        self.namesHandler(line[2])
+                    elif line[1] == '433':
+                        self.repeatedNickHandler()
+                    elif line[1] == 'JOIN':
+                        self.JOINHandler(line[0], line[2])
+                    elif line[1] == 'QUIT':
+                        self.QUITHandler(line[0])
+                    elif line[1] == 'NICK':
+                        self.nickHandler(line[0], line[2])
+                    elif line[2] == self.channel.channelName + ' :!hello':
+                        self.helloHandler()
+                    elif line[2] == self.channel.channelName + ' :!slap':
+                        self.slapHandler()
+                    elif line[1] == 'PRIVMSG':
+                        self.privMsgHandler(line[0], line[1], line[2])
+                except:
+                    print('ERROR: unexpected command')
 
     # handler for the 353 command
     def namesHandler(self, args):
@@ -193,7 +194,21 @@ class BotClient:
                 '%d/%m/%Y')) + ' and the current time is ' + str(datetime.now().strftime('%H:%M'))
         self.privMsg(self.channel.channelName, messageToSend)
 
-        # entry point for the running sequence of the bot
+    # handler for the !slap command
+    def slapHandler(self):
+
+        slapMsg = random.choice([x for x in self.channel.channelClients if x != self.nickName]) + \
+            " YOU'VE BEEN SLAPPED BY A TROUT!"
+
+        self.privMsg(self.channel.channelName, slapMsg)
+
+    # handler for NICK command (if user changes nick)
+    def nickHandler(self, prefix, newNick):
+        oldNick = prefix.split('!')[0][1:]
+        self.channel.channelClients.remove(oldNick)
+        self.channel.channelClients.append(newNick)
+
+    # entry point for the running sequence of the bot
     def runBot(self):
         # get response as list
         response = (self.getResponse()).split('\r\n')[:-1]

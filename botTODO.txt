@@ -21,7 +21,7 @@ XXXRandom facts are stored in a local file or retrieved from the webXXX
 _____________________________________________________________________________________________
 H)
 -The bot responds to bot commands on the channel and hexchat can display it correctly in the channel tab
--Bot correctly receive incoming channel messages from miniircd 
+XXX-Bot correctly receive incoming channel messages from miniircdXXX
 -Bot correctly process incoming channel messages from miniircd
 XXX-Responding correctly to the !hello command (greeting user with their name and time/day) and hexchat can display it properly in the correct channel tabXXX
--Responding correctly to the !slap command (slapping a random user in the channel with a trout) and hexchat can display it properly in the correct channel tab
+XXX-Responding correctly to the !slap command (slapping a random user in the channel with a trout) and hexchat can display it properly in the correct channel tabXXX
