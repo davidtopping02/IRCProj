@@ -6,10 +6,8 @@
 # -----------------------------------------------------------
 
 # imports
-from multiprocessing import connection
 from time import sleep
 import socket
-from urllib import response
 from ircServer import Channel
 
 
@@ -22,7 +20,7 @@ class BotClient:
         self.nickName = nickName
         self.server = server
         self.port = port
-        self.serverName = ""
+        self.serverName = ''
         self.channel = Channel(channel)
 
         # create socket object to gain access to the server
@@ -38,70 +36,39 @@ class BotClient:
             # initial joining server sequence
             self.user(self.userName)
             self.nick(self.nickName)
-            self.responseHandler(True)
 
+            # response handler incase the nick name is already taken
+            self.responseHandler((self.getResponse()).split('\r\n')[:-1])
             self.join(self.channel.channelName)
+
             return True
 
         except socket.error:
             # cannot connect to the server
             return False
 
-    # handles all responses recieved by the server
-    def responseHandler(self, newConnection, line=None):
-
-        # getting server name if new connection
-        if newConnection == True:
-            response = (self.getResponse()).split('\r\n')
-            self.serverName = response[0].split(' ')[0][1:]
-
-            for line in response:
-                self.responseHandler(False, line)
-
-        # handling each line of the resonse
-        if line != '':
-            # TODO TEMPORTARY TRY-CATCH TILL WE FIGURE OUT THE FORMAT OF OTHER TYPES OF MESSAGES
-            try:
-                # getting response code
-                responseCode = line.split(self.serverName + ' ')[1][0:3]
-
-                # RPL_NAMREPLY
-                if responseCode == '353':
-                   # updating the channel users
-                    self.channelUsers = ((line.split(self.currentChannel + " :"))
-                                         [1]).split(" ")
-
-                else:
-                    # TODO print to log file as well
-                    print('<<' + line)
-                    # takes out response codees
-                    # print('<<' + line.split(' :')[1])
-                return True
-            except:
-                return False
-
     # wrapper function to send a command along with arguments to the irc server
     def sendCMD(self, cmd, args):
         try:
             # sends the commands with args to the server
-            self.netSocket.send((cmd + " " + args + "\r\n").encode())
+            self.netSocket.send((cmd + ' ' + args + '\r\n').encode())
 
             # prints the command with args as well
-            print(">>" + cmd + " " + args)
+            print('<<' + cmd + ' ' + args)
         except:
-            print("Message could not be sent, please try again")
+            print('Message could not be sent, please try again')
 
     # revieves any messages from the server
     def getResponse(self):
         try:
-            return self.netSocket.recv(2000).decode("ascii")
+            return self.netSocket.recv(2000).decode('ascii')
         except:
-            return "Error recieving data from the server"
+            return 'Error recieving data from the server'
 
     # joins a channel
     def join(self, newChan=None):
-        self.currentChannel = newChan
-        self.sendCMD("JOIN", newChan)
+        self.channel.channelName = newChan
+        self.sendCMD('JOIN', newChan)
 
     # TODO leave a server with an optional leaving message
     def quit(self, message):
@@ -109,30 +76,32 @@ class BotClient:
 
     # changes nickname
     def nick(self, newNick=None):
+
+        # sends the NICK command
         self.nickName = newNick
-        self.sendCMD("NICK", self.nickName)
+        self.sendCMD('NICK', self.nickName)
 
     # sets the user name
     def user(self, user=None):
         self.userName = user
-        self.sendCMD("USER", self.nickName + "1 " + self.nickName +
-                     "2 " + self.nickName + "3 " + self.userName)
+        self.sendCMD('USER', self.nickName + '1 ' + self.nickName +
+                     '2 ' + self.nickName + '3 ' + self.userName)
 
     # shows the nicks of all users on channel parameter
     def names(self):
-        self.sendCMD("NAMES", self.channel.channelName)
+        self.sendCMD('NAMES', self.channel.channelName)
 
     # sends a private message to a user
     def privMsg(self, nickName, message):
-        self.sendCMD("PRIVMSG", nickName + " " + message)
+        self.sendCMD('PRIVMSG', nickName + ' ' + message)
 
     # pong function replies to the ping from server
     def pongReply(self):
-        self.sendCMD("PONG", "reply")
+        self.sendCMD('PONG', self.nickName)
 
     # parses a multiline server response and returns the desired line based on input code
     def parseRecieveMessage(self, recievedMessage, code):
-        recievedMessage = recievedMessage.split("\n")
+        recievedMessage = recievedMessage.split('\n')
 
         # loop through each line in the list
         for x in recievedMessage:
@@ -143,57 +112,112 @@ class BotClient:
 
         return -1
 
-    # running proccess of the bot
+    # deals with all responses from the server
+    def responseHandler(self, response):
+
+        for line in response:
+            print('>>'+line)
+
+            # dealing with ping
+            if line.startswith('PING'):
+                self.pongReply()
+
+            # ensuring line has prefix
+            if line[0] == ':':
+
+                # format- prefix:command:args
+                line = line.split(' ', 2)
+
+                # set channel topic
+                if line[1] == '331':
+                    pass
+                elif line[1] == '353':
+                    self.namesHandler(line[2])
+                elif line[1] == '433':
+                    self.repeatedNickHandler()
+                elif line[1] == 'JOIN':
+                    self.clientJOINHandler(line[0], line[2])
+                elif line[1] == 'QUIT':
+                    self.clientQUITHandler(line[0])
+
+    # handler for the 353 command
+    def namesHandler(self, args):
+        self.channel.channelClients = args.split(
+            self.channel.channelName + ' :')[1].split(' ')
+
+    # handler for 433 command
+    def repeatedNickHandler(self):
+
+        # updating nick name
+        self.nickName = (self.nickName + '_')
+        self.sendCMD('NICK', self.nickName)
+
+        # update incase name taken again
+        self.responseHandler((self.getResponse()).split('\r\n')[:-1])
+
+    # handler for JOIN command
+    def clientJOINHandler(self, prefix, args):
+
+        # appending client to the channel list
+        if args == self.channel.channelName and prefix[1:].startswith(self.nickName) == False:
+            self.channel.channelClients.append(prefix[1:].split('!', 1)[0])
+
+            print(self.channel.channelClients)
+
+    # handler for QUIT command
+    def clientQUITHandler(self, prefix):
+
+        # getting user from prefix
+        user = prefix[1:].split('!', 1)[0]
+
+        # updating channel list
+        self.channel.channelClients.remove(user)
+
+    # entry point for the running sequence of the bot
     def runBot(self):
-
         # get response as list
-        response = (self.getResponse()).split('\r\n')
+        response = (self.getResponse()).split('\r\n')[:-1]
 
-        if response != ['']:
-            for line in response:
-
-                if self.responseHandler(False, line):
-                    continue
-                else:
-                    # ping recieved
-                    if "PING" in line:
-                        self.pongReply()
-                        return True
-
+        # checking for blank response
+        if response != []:
+            self.responseHandler(response)
             return True
         else:
             return False
 
 
 # IPv6
-bot = BotClient("thisIsARealPerson", "realHuman",
-                "#test", "fc00:1337::17", 6667)
+bot = BotClient('thisIsARealPerson', 'realHuman',
+                '#test', 'fc00:1337::17', 6667)
 
 # running bot sequence
 if bot.connectToServer():
 
+    # infinite loop to run the bot functionallity
     while True:
 
+        # running the bot as long as connected to server
         if bot.runBot() == False:
-            print("ERROR: CONNECTION TO SERVER LOST\n")
+            print('ERROR: CONNECTION TO SERVER LOST\n')
 
             # 3 attempts to reconnect to the server
             for attempt in range(3):
-                print("Attempt (%d), trying to reconnect to the server...\n" %
+                print('Attempt (%d), trying to reconnect to the server...\n' %
                       (attempt+1))
 
                 # delay incase required for server to restart
                 sleep(2)
                 if bot.connectToServer() != False:
+                    # connection restablished
                     break
                 elif attempt >= 2:
                     print('AFTER 3 ATTEMPTS THE CONNECTION COULD NOT BE ESTABLISHED')
                     exit(1)
                 else:
                     continue
-
         else:
             continue
-
 else:
-    print("could not connect to server")
+    print('\nERROR: could not connect to server')
+    print('Server IP: ' + bot.server)
+    print('Port No: %d\n' % bot.port)

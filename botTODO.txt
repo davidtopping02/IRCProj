@@ -4,13 +4,13 @@ XXX-Bot instantiates datastructures required for network communicationXXX
 XXX-Bot establishes the connection with the serverXXX
 XXX-Bot correctly identify himself to the miniircd serverXXX
 XXX-Keeping the connection to miniircd alive, and managing it efficientlyXXX
--Reacting to common connection errors or network issues 
+XXX-Reacting to common connection errors or network issuesXXX
 _____________________________________________________________________________________________
 F)
--The bot can join a channel, retain the user list and keep track of users
+XXX-The bot can join a channel, retain the user list and keep track of users XXX
 XXX-Bot correctly request to join the channel and hexchat can display it joining the channelXXX
--Retaining the initial information sent by miniircd about the channel and its users
--Updating information about the channel users efficiently when they join or leave
+XXX-Retaining the initial information sent by miniircd about the channel and its usersXXX
+XXX-Updating information about the channel users efficiently when they join or leaveXXX
 _____________________________________________________________________________________________
 G)
 The bot responds to private messages with random facts delivered privately in hexchat
