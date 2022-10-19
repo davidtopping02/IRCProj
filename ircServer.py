@@ -33,36 +33,57 @@ class IRCServer:
 
         # if key is join, join channel
         if key == 'JOIN':
-            print('joining')
-            if (processedMessage[1] not in self.channelList):
-                channel = Channel(processedMessage[1])
-                self.channelList.append(channel.channelName.strip("\r"))
+            stripper = processedMessage[1].strip("\r")
+            #cycle through all channels
+            for channel in self.channelList:
+                if stripper == channel.channelName:
+                 
+                    channel.joinChannel(channel, user)
+                    print("Successfully joined: " + channel.channelName)
+                    msg = f":{user.nickName}!blank@{user.clientIP} JOIN {channel.channelName}\r\n"
+                    self.server_send(msg)
+                else:
+                    newChannel = Channel(stripper)
+                    self.channelList.append(newChannel)
 
-                channel.joinChannel(channel, user)
-                print("Successfully joined: " + channel.channelName)
-                msg = f":{user.nickName}!blank@{user.clientIP} JOIN {channel.channelName}\r\n"
-                self.server_send(msg)
-                print(self.channelList)
+                    channel.joinChannel(newChannel, user)
+                    print("Successfully joined: " + channel.channelName)
+                    msg = f":{user.nickName}!blank@{user.clientIP} JOIN {newChannel.channelName}\r\n"
+                    self.server_send(msg)
+
+#printting all channels in the list
+            print("Channels: ")
+            for channel in self.channelList:
+                print(channel.channelName)
 
         # if key is part, leave channel
         if key == 'PART':
-            print('quit')
-            #channel = processedMessage[1].strip("\r")
-            if (processedMessage[1] not in self.channelList):
-                print("invalid channel, please try again")
-            else:
-                # TODO not for mid term submission
-                # channel = leaveChannel(processedMessage, user)
-                msg = f":{user.nickName}!@{user.clientIP} PART {processedMessage[1]}\r\n"
-                self.server_send(msg)
-                print("Successfully disconnected")
-                self.channelList.remove(processedMessage[1])
+            stripper = processedMessage[1].strip("\r")
+            for channel in self.channelList:
+                if (stripper == channel.channelName):
+
+                    msg = f":{user.nickName}!@{user.clientIP} PART {channel.channelName}\r\n"
+                    self.server_send(msg)
+                    channel.leaveChannel(channel, user)
+                    if len(channel.channelClients) == 0:
+                        print("Removing channel")
+                        self.channelList.remove(channel)
+                    print("Successfully disconnected")
+                else:
+                    # TODO not for mid term submission
+                    # channel = leaveChannel(processedMessage, user)
+                    print("Channel does not exist, please try again")
+
+            print("Channels: ")
+            for channel in self.channelList:
+                print(channel.channelName)
 
         if key == 'MODE':
             print('mode')
 
         # if key is nick, set nickname
         if key == 'NICK':
+
             user.set_nick(processedMessage[1])
             if user.nickName == processedMessage[1]:
                 print("Your new Nickname is: " + user.nickName)
@@ -94,6 +115,9 @@ class IRCServer:
         s.listen()
         print(f"Server Listening on {self.hostPort}")
 
+        testChannel = Channel("#test")
+        self.channelList.append(testChannel)
+
         while True:
             # client is connected by address
             conn, addr = s.accept()
@@ -101,6 +125,8 @@ class IRCServer:
                 self.clientDetails.append(conn)
             print(f"Connected by {addr}")
             self.connectedClients += 1
+
+            self.sendserver = ("Welcome User: ")
             # makes new thread for client
             start_new_thread(self.multi_threaded_client,
                              (conn, self.connectedClients))
@@ -186,7 +212,7 @@ class Channel:
 
     # leave Channel funciton, under development
     def leaveChannel(self, channel, client):
-        print('leaving the channel')
+        self.channelClients.remove(client)
 
 
 # Creating server instance
