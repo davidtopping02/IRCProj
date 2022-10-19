@@ -9,6 +9,8 @@
 from time import sleep
 import socket
 from ircServer import Channel
+import random
+from datetime import datetime
 
 
 class BotClient:
@@ -22,6 +24,10 @@ class BotClient:
         self.port = port
         self.serverName = ''
         self.channel = Channel(channel)
+
+        # load in bot facts file
+        with open('botFacts.txt') as f:
+            self.botFacts = [line.rstrip('\n') for line in f]
 
         # create socket object to gain access to the server
         self.netSocket = socket.socket()
@@ -92,8 +98,8 @@ class BotClient:
         self.sendCMD('NAMES', self.channel.channelName)
 
     # sends a private message to a user
-    def privMsg(self, nickName, message):
-        self.sendCMD('PRIVMSG', nickName + ' ' + message)
+    def privMsg(self, target, message):
+        self.sendCMD('PRIVMSG', target + ' :' + message)
 
     # pong function replies to the ping from server
     def pongReply(self):
@@ -136,9 +142,13 @@ class BotClient:
                 elif line[1] == '433':
                     self.repeatedNickHandler()
                 elif line[1] == 'JOIN':
-                    self.clientJOINHandler(line[0], line[2])
+                    self.JOINHandler(line[0], line[2])
                 elif line[1] == 'QUIT':
-                    self.clientQUITHandler(line[0])
+                    self.QUITHandler(line[0])
+                elif line[2] == self.channel.channelName + ' :!hello':
+                    self.helloHandler()
+                elif line[1] == 'PRIVMSG':
+                    self.privMsgHandler(line[0], line[1], line[2])
 
     # handler for the 353 command
     def namesHandler(self, args):
@@ -156,16 +166,14 @@ class BotClient:
         self.responseHandler((self.getResponse()).split('\r\n')[:-1])
 
     # handler for JOIN command
-    def clientJOINHandler(self, prefix, args):
+    def JOINHandler(self, prefix, args):
 
         # appending client to the channel list
         if args == self.channel.channelName and prefix[1:].startswith(self.nickName) == False:
             self.channel.channelClients.append(prefix[1:].split('!', 1)[0])
 
-            print(self.channel.channelClients)
-
     # handler for QUIT command
-    def clientQUITHandler(self, prefix):
+    def QUITHandler(self, prefix):
 
         # getting user from prefix
         user = prefix[1:].split('!', 1)[0]
@@ -173,7 +181,19 @@ class BotClient:
         # updating channel list
         self.channel.channelClients.remove(user)
 
-    # entry point for the running sequence of the bot
+    # handler for the private message commmand
+    def privMsgHandler(self, prefix, cmd, args):
+        self.privMsg(self.channel.channelName, random.choice(self.botFacts))
+
+    # handler for the !hello command
+    def helloHandler(self):
+
+        messageToSend = 'Hello, my name is ' + self.nickName + \
+            '. The current date is ' + str(datetime.now().strftime(
+                '%d/%m/%Y')) + ' and the current time is ' + str(datetime.now().strftime('%H:%M'))
+        self.privMsg(self.channel.channelName, messageToSend)
+
+        # entry point for the running sequence of the bot
     def runBot(self):
         # get response as list
         response = (self.getResponse()).split('\r\n')[:-1]
