@@ -184,7 +184,11 @@ class BotClient:
 
     # handler for the private message commmand
     def privMsgHandler(self, prefix, cmd, args):
-        self.privMsg(self.channel.channelName, random.choice(self.botFacts))
+
+        user = prefix[1:].split('!', 1)[0]
+
+        self.privMsg(self.channel.channelName, user +
+                     ' ' + random.choice(self.botFacts))
 
     # handler for the !hello command
     def helloHandler(self):
