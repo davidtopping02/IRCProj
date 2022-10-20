@@ -69,17 +69,25 @@ class IRCServer:
                         print("Removing channel")
                         self.channelList.remove(channel)
                     print("Successfully disconnected")
-                else:
+            else:
                     # TODO not for mid term submission
                     # channel = leaveChannel(processedMessage, user)
-                    print("Channel does not exist, please try again")
+                print("Channel does not exist, please try again")
 
             print("Channels: ")
             for channel in self.channelList:
                 print(channel.channelName)
 
         if key == 'MODE':
-            print('mode')
+            stripper = processedMessage[1].strip("\r")
+            for channel in self.channelList:
+                if stripper == channel.channelName:
+
+                    self.server_send(f": 324 {user.nickName} {stripper} +\r\n")
+                    self.server_send(f": 331 {user.nickName} {stripper} :No channel topic for this channel.\r\n")
+                    for u in channel.channelClients:
+                        self.server_send(f": 353 {user.nickName} = {stripper} :{u.nickName}\r\n")
+                    self.server_send(f": 366 {user.nickName} {stripper} :End of NAMES list\r\n")
 
         # if key is nick, set nickname
         if key == 'NICK':
@@ -98,8 +106,17 @@ class IRCServer:
             print('private message')
             # sendPriv()
         if key == 'WHO':
-            print('who')
+            stripper = processedMessage[1].strip("\r")
+            for channel in self.channelList:
+                if stripper == channel.channelName:
+
+                    for u in channel.channelClients:
+                        msg = (f": 352 {user.nickName} {channel.channelName} tested {user.clientIP} {u.nickName} H:0 Preslav\r\n")
+                        self.server_send(msg)
+                    msg2 = (f": 315 {user.nickName} {channel.channelName} :End of WHO List\r\n")
+                    self.server_send(msg2)
         if key == 'PING':
+            user.send(bytes(msg2.encode('utf-8')))
             print('ping')
         else:
             print(response)
@@ -207,8 +224,8 @@ class Channel:
     # join Channel function, currently under development
     def joinChannel(self, channel, client):
         self.channelClients.append(client)
-        # for i in range(len(self.channelClients)):
-        #   print("YO Client Name" + self.channelClients[i].nickName)
+        for i in range(len(self.channelClients)):
+            print("YO Client Name" + self.channelClients[i].nickName)
 
     # leave Channel funciton, under development
     def leaveChannel(self, channel, client):
