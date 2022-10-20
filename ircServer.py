@@ -159,6 +159,7 @@ class Client:
         self.connectedChannels = []
         self.startTime = time.time()  # time the client first connected
         self.sentPing = False  # check if ping has been sent
+        self.gotPong = False
 
     # used for testing new instances of client
     # def test(self):
@@ -176,6 +177,8 @@ class Client:
             message = ("PING TESTNET\r\n")
             self.server_send(message)
             self.sentPing = True
+        if self.startTime + 120 < currentTime and self.gotPong is False:
+            self.disconnect()
 
     def server_send(self, command):
         # TODO EVERY SERVER MESSAGE IS SENT USING FIRST USER TO CONNECT... CHANGE THIS TO ALLOW MULTI-CLIENT CHANNEL CONNECTION
