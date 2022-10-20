@@ -26,7 +26,7 @@ class BotClient:
         self.channel = Channel(channel)
 
         # load in bot facts file
-        with open('botFacts.txt') as f:
+        with open('botFacts.txt', encoding='utf8') as f:
             self.botFacts = [line.rstrip('\n') for line in f]
 
         # create socket object to gain access to the server
