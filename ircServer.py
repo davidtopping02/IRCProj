@@ -33,10 +33,10 @@ class IRCServer:
         if key == 'JOIN':
 
             stripper = processedMessage[1].strip("\r")
-            #cycle through all channels
+            # cycle through all channels
             for channel in self.channelList:
                 if stripper == channel.channelName:
-                 
+
                     channel.joinChannel(channel, user)
                     print("Successfully joined: " + channel.channelName)
                     msg = f":{user.nickName}!blank@{user.clientIP} JOIN {channel.channelName}\r\n"
@@ -50,7 +50,7 @@ class IRCServer:
                     msg = f":{user.nickName}!blank@{user.clientIP} JOIN {newChannel.channelName}\r\n"
                     user.server_send(msg)
 
-#printting all channels in the list
+# printting all channels in the list
             print("Channels: ")
             for channel in self.channelList:
                 print(channel.channelName)
@@ -69,8 +69,8 @@ class IRCServer:
                         self.channelList.remove(channel)
                     print("Successfully disconnected")
             else:
-                    # TODO not for mid term submission
-                    # channel = leaveChannel(processedMessage, user)
+                # TODO not for mid term submission
+                # channel = leaveChannel(processedMessage, user)
                 print("Channel does not exist, please try again")
 
             print("Channels: ")
@@ -83,10 +83,13 @@ class IRCServer:
                 if stripper == channel.channelName:
 
                     user.server_send(f": 324 {user.nickName} {stripper} +\r\n")
-                    user.server_send(f": 331 {user.nickName} {stripper} :No channel topic for this channel.\r\n")
+                    user.server_send(
+                        f": 331 {user.nickName} {stripper} :No channel topic for this channel.\r\n")
                     for u in channel.channelClients:
-                        self.server_send(f": 353 {user.nickName} = {stripper} :{u.nickName}\r\n")
-                    user.server_send(f": 366 {user.nickName} {stripper} :End of NAMES list\r\n")
+                        user.server_send(
+                            f": 353 {user.nickName} = {stripper} :{u.nickName}\r\n")
+                    user.server_send(
+                        f": 366 {user.nickName} {stripper} :End of NAMES list\r\n")
 
         # if key is nick, set nickname
         if key == 'NICK':
@@ -110,9 +113,11 @@ class IRCServer:
                 if stripper == channel.channelName:
 
                     for u in channel.channelClients:
-                        msg = (f": 352 {user.nickName} {channel.channelName} tested {user.clientIP} {u.nickName} H:0 Preslav\r\n")
-                        self.server_send(msg)
-                    msg2 = (f": 315 {user.nickName} {channel.channelName} :End of WHO List\r\n")
+                        msg = (
+                            f": 352 {user.nickName} {channel.channelName} tested {user.clientIP} {u.nickName} H:0 Preslav\r\n")
+                        user.server_send(msg)
+                    msg2 = (
+                        f": 315 {user.nickName} {channel.channelName} :End of WHO List\r\n")
                     user.server_send(msg2)
         if key == 'PING':
             user.send(bytes(msg2.encode('utf-8')))
@@ -156,9 +161,9 @@ class IRCServer:
                 break
 
             # prints and calls every line seperately
-            for x in range(len(data2)):
-                print(data2[x])
-                self.command(data2[x], client)
+            # for x in range(len(data2)):
+            #     print(data2[x])
+            #     self.command(data2[x], client)
 
         s.close()
 
@@ -256,6 +261,7 @@ class Channel:
 # Creating server instance
 def startServer():
     server = IRCServer(6667, "::1", 0)
+    #server = IRCServer(6667, "fc00:1337::17", 0)
     server.startServer()
 
 
