@@ -226,11 +226,12 @@ class BotClient:
 
 
 # IPv6
-# bot = BotClient('thisIsARealPerson', 'realHuman',
-#                 '#test', 'fc00:1337::17', 6667)
-
 bot = BotClient('thisIsARealPerson', 'realHuman',
-                '#test', '::1', 6667)
+                '#test', 'fc00:1337::17', 6667)
+
+# bot = BotClient('thisIsARealPerson', 'realHuman',
+#                 '#test', '::1', 6667)
+
 # running bot sequence
 if bot.connectToServer():
 
