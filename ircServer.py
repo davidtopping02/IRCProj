@@ -12,7 +12,7 @@ import socket
 from _thread import *
 import time
 
-from grpc import server
+#from grpc import server
 
 
 # Internet Relay Server class that contains the basic functionallity
@@ -219,64 +219,25 @@ class IRCServer:
                 # checks if the channel to be joined already exists
                 if channelName.strip('\r') == channel.channelName:
                     channel.channelClients.append(client)
-                    msg = f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {channel.channelName}\r\n"
-                    client.server_send(msg)
-                    #                 client.server_send(
-                    #                     'You have successfully joined ' + channel.channelName + '! :)\r\n')
+                    #loop for each client in a channel
+                    for dude in channel.channelClients:
+                        msg = f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {channel.channelName}\r\n"
+
+                        #each client sends the msg individually
+                        dude.server_send(msg)
                     channelExists = True
                 else:
                     pass
+            #if channel does not exist
             if channelExists == False:
+                #create a new channel
                 newChannel = Channel(channelName.strip('\r'))
+                #append user to channel list
                 newChannel.channelClients.append(client)
                 self.channelList.append(newChannel)
                 msg = f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {newChannel.channelName}\r\n"
 
                 client.server_send(msg)
-
-            # handler function for joining a channel
-            # def joinHandler(self, client, channelName):
-
-            #     # create new channel if list is empty
-            #     if len(self.channelList) == 0:
-            #         # create a channel
-            #         newChan = Channel(channelName.strip('\r'))
-
-            #         # append client to new channel
-            #         newChan.channelClients.append(client)
-
-            #         # append to server channel list
-            #         self.channelList.append(newChan)
-
-            #         # joined channel message
-            #         client.server_send(
-            #             f":{client.nickName}!blank@{client.clientIP} JOIN {newChan.channelName}\r\n")
-
-            #         client.server_send('You have successfully joined ' +
-            #                            newChan.channelName + '! :)\r\n')
-
-            #     else:
-            #         # cycle through all channels
-            #         for channel in self.channelList:
-
-            #             # checking if the channel exists already
-            #             if channelName.strip('\r') == channel.channelName:
-
-            #                 channel.channelClients.append(client)
-            #                 msg = f":{client.nickName}!blank@{client.clientIP} JOIN {channel.channelName}\r\n"
-            #                 client.server_send(msg)
-            #                 client.server_send(
-            #                     'You have successfully joined ' + channel.channelName + '! :)\r\n')
-            #             else:
-            #                 newChannel = Channel(channelName.strip('\r'))
-            #                 newChannel.channelClients.append(client)
-            #                 self.channelList.append(newChannel)
-            #                 msg = f":{client.nickName}!blank@{client.clientIP} JOIN {newChannel.channelName}\r\n"
-            #                 client.server_send(
-            #                     'You have successfully joined ' + newChannel.channelName + '! :)\r\n')
-            #                 client.server_send(msg)
-
-            # handler for part (leaving channel)
 
     def partHandler(self, client, channelName):
 
@@ -289,7 +250,8 @@ class IRCServer:
                 if (channelName.split(' ')[0] == channel.channelName) and (user.nickName == client.nickName):
 
                     # sends successful parting message
-                    client.server_send(
+                    for dude in channel.channelClients:
+                        dude.server_send(
                         f":{client.nickName}!@{client.clientIP} PART {channel.channelName}\r\n")
 
                     # remove client from the channel list
@@ -358,7 +320,7 @@ class Channel:
 if __name__ == "__main__":
 
     # instantiate server object and starts the server main running loop
-    server = IRCServer(6667, "fc00:1337::17", 0)
+    server = IRCServer(6667, "::1", 0)
     server.startServer()
     server.server_listen()
 
