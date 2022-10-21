@@ -6,22 +6,26 @@
 # -----------------------------------------------------------
 
 # imports
+from queue import Empty
 import socket
-import os
-from webbrowser import open_new
 from _thread import *
 import time
+
+from grpc import server
 
 
 # Internet Relay Server class that contains the basic functionallity
 class IRCServer:
     def __init__(self, hostPort, hostIP, connectedClients):
+        self.serverName = 'G6-IRCServer'
         self.hostPort = hostPort
         self.hostIP = hostIP
         self.connectedClients = connectedClients
         self.clientList = []
         self.channelList = []
-        # self.rawLog = rawLog
+
+        # creates new socket object
+        self.serverSocket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
     # command function to execute and proccess the user response
     def command(self, response, user):
@@ -50,7 +54,7 @@ class IRCServer:
                     msg = f":{user.nickName}!blank@{user.clientIP} JOIN {newChannel.channelName}\r\n"
                     user.server_send(msg)
 
-# printting all channels in the list
+            # printting all channels in the list
             print("Channels: ")
             for channel in self.channelList:
                 print(channel.channelName)
@@ -125,67 +129,48 @@ class IRCServer:
         else:
             print(response)
 
-    # Function to start the server
+    # Starts server on specified ip and port
     def startServer(self):
 
-        # makes new socket
-        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-
         # binds socket to ip
-        s.bind((self.hostIP, self.hostPort))
-        s.listen()
+        self.serverSocket.bind((self.hostIP, self.hostPort))
         print(f"Server Listening on {self.hostPort}")
 
-        testChannel = Channel("#test")
-        self.channelList.append(testChannel)
+    # listens for client
+    def server_listen(self):
 
+        # listening on port
+        self.serverSocket.listen()
+
+        # main loop for new clients (put in seperate function)
         while True:
-            # client is connected by address
-            conn, addr = s.accept()
-            print(f"Connected by {addr}")
-            self.connectedClients += 1
 
-            self.sendserver = ("Welcome User: ")
-            # makes new thread for client
-            start_new_thread(self.multi_threaded_client,
-                             (conn, self.connectedClients))
+            # client is connected by address
+            conn, addr = self.serverSocket.accept()
+            print('New connection' + str(addr))
 
             # Adding client to client list
             client = Client(addr[1], addr[0], conn)
             self.clientList.append(client)
-            # print(self.clientList)
-            print('Clients Connected : ' + str(self.connectedClients))
-            data = conn.recv(1024).decode('UTF-8')
-            data2 = data.split("\n")
-            if not data:
-                break
+            self.connectedClients += 1
 
-            # prints and calls every line seperately
-            # for x in range(len(data2)):
-            #     print(data2[x])
-            #     self.command(data2[x], client)
-
-        s.close()
+            # makes new thread for client
+            start_new_thread(self.multi_threaded_client,
+                             (conn, self.connectedClients))
 
     # Allows for multi-client connection, adapted from https://www.positronx.io/create-socket-server-with-multiple-clients-in-python/
-
     def multi_threaded_client(self, connection, threadNum):
 
-        for client in self.clientList:
-            client.check_connection()
+        # for client in self.connectedClients:
+        #     client.check_connection()
 
         while True:
             # recieves data
             data = connection.recv(2048)
-            # response = 'Server message: ' + data.decode('utf-8')
-            # sends message to client
-            response = data.decode('ascii')
-            response2 = response.split("\n")
+            response = (data.decode('ascii')).split("\n")
 
-            # prints and calls every line seperately
-            for x in range(len(response[2])):
-                print(response2[x])
-                self.command(response2[x], self.clientList[threadNum-1])
+            # deal with client response: (response, threadNum-clientID)
+            self.responseHandler(response, self.clientList[threadNum-1])
 
             if not data:
                 break
@@ -195,11 +180,118 @@ class IRCServer:
             #     clients.send(str.encode(response))
         connection.close()
 
+    # response handler for every line sent by client
+    def responseHandler(self, response, client):
 
-# Created whenever a client joins the IRC server
+        # loops through each response line
+        for line in response:
+            print('>>'+line)
+
+            if line != '':
+
+                # format- prefix:command:args
+                line = line.split(' ', 1)
+                print(line)
+
+                if line[0] == 'NICK':
+
+                    # storing old nick for the change of nick command
+                    oldNick = client.nickName
+
+                    # sets the client's nickname
+                    client.nickName = line[1].strip('\r')
+                    print(client.nickName)
+
+                    # sends the confirmation
+                    client.server_send(
+                        f":{oldNick}!{client.clientIP} NICK {client.nickName}\r\n")
+                    # TODO verify nickname (433)
+
+                if line[0] == 'USER':
+                    args = line[1].split(' ')
+                    # split args into username and realname
+                    client.userName = args[0]
+                    client.realName = args[3].replace(':', '').strip('\r')
+
+                    # send welcome message
+                    if client.nickName != '' and client.realName != '':
+                        client.server_send(
+                            f":{self.serverName} 002 {client.nickName} :Host - {socket.gethostname()}, Version: 2.0\r\n")
+                        client.server_send(
+                            f":{self.serverName} 003 {client.nickName} :Server was createred as of recent\r\n")
+                        client.server_send(
+                            f":{self.serverName} 004 {client.nickName} {socket.gethostname()}, 2.0\r\n")
+                        client.server_send(
+                            f":{self.serverName} 251 {client.nickName} :Number of users on: {len(self.clientList)}\r\n")
+                        client.server_send(
+                            f":{self.serverName} 422 {client.nickName} :MOTD ERROR.\r\n")
+
+                if line[0] == 'JOIN':
+                    self.joinHandler(client, line[1])
+
+                if line[0] == 'PART':
+                    self.partHandler(client, line[1])
+
+    # handler function for joining a channel
+    def joinHandler(self, client, channelName):
+
+        # create new channel if list is empty
+        if len(self.channelList) == 0:
+            # create a channel
+            newChan = Channel(channelName.strip('\r'))
+
+            # append client to new channel
+            newChan.channelClients.append(client)
+
+            # append to server channel list
+            self.channelList.append(newChan)
+
+            # joined channel message
+            client.server_send(
+                f":{client.nickName}!blank@{client.clientIP} JOIN {newChan.channelName}\r\n")
+
+        else:
+            # cycle through all channels
+            for channel in self.channelList:
+
+                # checking if the channel exists already
+                if channelName.strip('\r') == channel.channelName:
+
+                    channel.channelClients.append(client)
+                    msg = f":{client.nickName}!blank@{client.clientIP} JOIN {channel.channelName}\r\n"
+                    client.server_send(msg)
+                else:
+                    newChannel = Channel(channelName.strip('\r'))
+                    newChannel.channelClients.append(client)
+                    self.channelList.append(newChannel)
+                    msg = f":{client.nickName}!blank@{client.clientIP} JOIN {newChannel.channelName}\r\n"
+                    client.server_send(msg)
+
+    # handler for part (leaving channel)
+    def partHandler(self, client, channelName):
+
+        # cycles through all channels
+        for channel in self.channelList:
+
+            # compares channel name
+            if (channelName.strip("\r") == channel.channelName):
+
+                msg = f":{client.nickName}!@{client.clientIP} PART {channel.channelName}\r\n"
+                client.server_send(msg)
+                channel.leaveChannel(channel, client)
+                if len(channel.channelClients) == 0:
+                    print("Removing channel")
+                    self.channelList.remove(channel)
+                print("Successfully disconnected")
+        else:
+            # TODO not for mid term submission
+            # channel = leaveChannel(processedMessage, user)
+            print("Channel does not exist, please try again")
+
+
 class Client:
     def __init__(self, port, clientIP, conn):
-        self.nickName = "test"
+        self.nickName = ""
         self.realName = ""
         self.userName = ""
         self.port = port
@@ -258,13 +350,13 @@ class Channel:
         self.channelClients.remove(client)
 
 
-# Creating server instance
-def startServer():
-    server = IRCServer(6667, "::1", 0)
-    #server = IRCServer(6667, "fc00:1337::17", 0)
-    server.startServer()
-
-
 # this is a work around to use the channel module from this file
 if __name__ == "__main__":
-    startServer()
+
+    # instantiate server object and starts the server main running loop
+    server = IRCServer(6667, "fc00:1337::17", 0)
+    server.startServer()
+    server.server_listen()
+
+    # closes port
+    server.serverSocket.close()
