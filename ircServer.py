@@ -12,9 +12,6 @@ import socket
 from _thread import *
 import time
 
-#from grpc import server
-
-
 # Internet Relay Server class that contains the basic functionallity
 class IRCServer:
     def __init__(self, hostPort, hostIP, connectedClients):
@@ -61,10 +58,8 @@ class IRCServer:
     # Allows for multi-client connection, adapted from https://www.positronx.io/create-socket-server-with-multiple-clients-in-python/
     def multi_threaded_client(self, connection, threadNum):
 
-        # for client in self.connectedClients:
-        #     client.check_connection()
-
         while True:
+
             # recieves data
             data = connection.recv(2048)
             response = (data.decode('ascii')).split("\n")
@@ -74,6 +69,12 @@ class IRCServer:
 
             if not data:
                 break
+            now = time.time()
+            if self.clientList[threadNum-1].lastConnectionCheck + 10 < now:
+                self.sentPing = False
+                for client in self.clientList:
+                    client.gotPong = False
+                    client.check_connection()
         connection.close()
 
     # response handler for every line sent by client
@@ -153,6 +154,10 @@ class IRCServer:
 
                             client.server_send(
                                 f": 315 {client.nickName} {channel.channelName} :End of WHO List\r\n")
+
+                # Checking if client pongs
+                elif line[0] == 'PONG':
+                    client.pong_handler()
 
     def nickHandler(self, client, newNick):
 
@@ -280,22 +285,29 @@ class Client:
         self.startTime = time.time()  # time the client first connected
         self.sentPing = False  # check if ping has been sent
         self.gotPong = False
+        self.lastConnectionCheck = time.time()
 
-    # def check_connection(self):
-    #     currentTime = time.time()
-    #     if self.startTime + 60 < currentTime and self.sentPing is False:
-    #         # TODO We need to add a server name
-    #         message = ("PING TESTNET\r\n")
-    #         self.server_send(message)
-    #         self.sentPing = True
-    #     if self.startTime + 120 < currentTime and self.gotPong is False:
-    #         self.disconnect()
+    # check for inactive clients using time library
+    def check_connection(self):
+        currentTime = time.time()
+        if self.startTime + 60 < currentTime and self.sentPing is False:
+            message = (f"PING {socket.gethostname()}\r\n")
+            self.server_send(message)
+            self.sentPing = True
+        if self.startTime + 120 < currentTime and self.gotPong is False:
+            self.disconnect()
+
+    def pong_handler(self):
+        self.gotPong = True
+        self.startTime = time.time()  # change startTime to time of last pong reply
+        self.sentPing = False  # Reset sent ping to false
 
     def server_send(self, command):
         self.conn.send(bytes(command.encode()))
         print('<<' + command)
 
     def disconnect(self):
+        # TODO add a message when the server disconnects you
         self.conn.close()
 
 # Created when a channel is created for the IRC
@@ -320,6 +332,7 @@ class Channel:
 if __name__ == "__main__":
 
     # instantiate server object and starts the server main running loop
+    #server = IRCServer(6667, "fc00:1337::17", 0)
     server = IRCServer(6667, "::1", 0)
     server.startServer()
     server.server_listen()
