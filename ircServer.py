@@ -209,7 +209,7 @@ class IRCServer:
 
             # joined channel message
             client.server_send(
-                f":{client.nickName}!blank@{client.clientIP} JOIN {newChan.channelName}\r\n")
+                f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {newChan.channelName}\r\n")
 
         #  a channel exists
         elif len(self.channelList) != 0:
@@ -219,7 +219,7 @@ class IRCServer:
                 # checks if the channel to be joined already exists
                 if channelName.strip('\r') == channel.channelName:
                     channel.channelClients.append(client)
-                    msg = f":{client.nickName}!blank@{client.clientIP} JOIN {channel.channelName}\r\n"
+                    msg = f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {channel.channelName}\r\n"
                     client.server_send(msg)
                     #                 client.server_send(
                     #                     'You have successfully joined ' + channel.channelName + '! :)\r\n')
@@ -230,7 +230,7 @@ class IRCServer:
                 newChannel = Channel(channelName.strip('\r'))
                 newChannel.channelClients.append(client)
                 self.channelList.append(newChannel)
-                msg = f":{client.nickName}!blank@{client.clientIP} JOIN {newChannel.channelName}\r\n"
+                msg = f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {newChannel.channelName}\r\n"
 
                 client.server_send(msg)
 
