@@ -68,7 +68,7 @@ class IRCServer:
             except:
                 exit()
 
-            response = (data.decode('ascii')).split("\n")
+            response = (data.decode('utf-8')).split("\n")
 
             # deal with client response: (response, threadNum-clientID)
             self.responseHandler(response, self.clientList[threadNum-1])
@@ -355,7 +355,11 @@ class Client:
         self.sentPing = False  # Reset sent ping to false
 
     def server_send(self, command):
-        self.conn.send(bytes(command.encode()))
+        try:
+            self.conn.send(bytes(command.encode()))
+        except:
+            pass
+
         print('<<' + command)
 
     def disconnect(self):
