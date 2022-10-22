@@ -200,7 +200,7 @@ class IRCServer:
             client.server_send(
                         f":{socket.gethostname()} 432 * {newNick} :Erroneous nickname\r\n")
 
-
+            return
 
         # storing old nick for the change of nick command
         oldNick = client.nickName
