@@ -186,8 +186,12 @@ class IRCServer:
 
         args = args.split(' :', 1)
 
-        #TODO
-        #if args[0] = empty, that means there is no recipient return 411
+        
+        if args[0] == "":
+            user.server_send(f":{socket.gethostname()} 411 {client.nickName} :No recipient given (PRIVMSG)\r\n")
+        if args[1] == "":
+            user.server_send(f":{socket.gethostname()} 412 {client.nickName} :No text to send\r\n")
+
 
         # checks if our chosen channel exits in the channelList
         for channel in self.channelList:
@@ -207,6 +211,8 @@ class IRCServer:
                 #send private message to our recipient
                 user.server_send(
                     f":{client.nickName}!{client.realName}@{socket.gethostname()} PRIVMSG {args[0]} {args[1]}\r\n")
+           # elif args[0] not in self.clientList:
+            #    user.server_send(f":{socket.gethostname()} 401 {client.nickName} {args[0]} :No such nick/channel\r\n")
         
 
     # handler function for joining a channel
@@ -264,21 +270,22 @@ class IRCServer:
             for user in channel.channelClients:
 
                 # compares channel name
-                if (channelName.split(' ')[0] == channel.channelName) and (user.nickName == client.nickName):
+                if (channelName.split(' ')[0] == channel.channelName):
+                    if(user.nickName == client.nickName):
 
                     # sends successful parting message
-                    for dude in channel.channelClients:
-                        dude.server_send(
-                        f":{client.nickName}!@{client.clientIP} PART {channel.channelName}\r\n")
+                        for dude in channel.channelClients:
+                            dude.server_send(
+                            f":{client.nickName}!@{client.clientIP} PART {channel.channelName}\r\n")
 
-                    # remove client from the channel list
-                    channel.channelClients.remove(client)
+                        # remove client from the channel list
+                        channel.channelClients.remove(client)
 
-                    # removes the channel if there are no other users
-                    if len(channel.channelClients) == 0:
-                        print("Removing channel")
-                        self.channelList.remove(channel)
-                    print("Successfully disconnected")
+                        # removes the channel if there are no other users
+                        if len(channel.channelClients) == 0:
+                            print("Removing channel")
+                            self.channelList.remove(channel)
+                        print("Successfully disconnected")
 
                 else:
                     client.server_send(
