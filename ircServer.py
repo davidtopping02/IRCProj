@@ -63,7 +63,11 @@ class IRCServer:
         while True:
 
             # recieves data
-            data = connection.recv(2048)
+            try:
+                data = connection.recv(2048)
+            except:
+                exit()
+
             response = (data.decode('ascii')).split("\n")
 
             # deal with client response: (response, threadNum-clientID)
@@ -72,11 +76,16 @@ class IRCServer:
             if not data:
                 break
             now = time.time()
-            if self.clientList[threadNum-1].lastConnectionCheck + 10 < now:
-                self.sentPing = False
-                for client in self.clientList:
-                    client.gotPong = False
-                    client.check_connection()
+
+            try:
+                if self.clientList[threadNum-1].lastConnectionCheck + 10 < now:
+                    self.sentPing = False
+                    for client in self.clientList:
+                        client.gotPong = False
+                        client.check_connection()
+            except:
+                pass
+
         connection.close()
 
     # response handler for every line sent by client
@@ -160,6 +169,28 @@ class IRCServer:
                 # Checking if client pongs
                 elif line[0] == 'PONG':
                     client.pong_handler()
+
+                elif line[0] == 'QUIT':
+                    self.quitHandler(client)
+
+    def quitHandler(self, client):
+        # handler to kick user upon quit
+        try:
+            client.conn.close()
+        except:
+            print("Error closing socket")
+
+        # cycles through all channesl and removes user from their joined ones
+        for channel in self.channelList:
+            channel.channelClients.remove(client)
+            if len(channel.channelClients) == 0:
+                self.channelList.remove(channel)
+
+        for user in self.clientList:
+            if client.userName == user.userName:
+                self.clientList.remove(client)
+
+        self.connectedClients += -1
 
     def nickHandler(self, client, newNick):
 
