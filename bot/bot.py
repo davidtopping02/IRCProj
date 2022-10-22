@@ -8,9 +8,10 @@
 # imports
 from time import sleep
 import socket
-from ircServer import Channel
+from server.ircServer import Channel
 import random
 from datetime import datetime
+import atexit
 
 
 class BotClient:
@@ -129,6 +130,9 @@ class BotClient:
                 # format- prefix:command:args
                 line = line.split(' ', 2)
 
+                if line[2].endswith('\r'):
+                    line[2] = line[2].strip('\r')
+
                 # set channel topic
                 if line[1] == '331':
                     pass
@@ -208,7 +212,9 @@ class BotClient:
     # handler for NICK command (if user changes nick)
     def nickHandler(self, prefix, newNick):
         oldNick = prefix.split('!')[0][1:]
-        self.channel.channelClients.remove(oldNick)
+
+        if oldNick != '':
+            self.channel.channelClients.remove(oldNick)
         self.channel.channelClients.append(newNick)
 
     # entry point for the running sequence of the bot
@@ -223,42 +229,50 @@ class BotClient:
         else:
             return False
 
+    def exit_handler(self):
+        self.sendCMD(self, 'QUIT', ': leaving... bye xoxo')
+
+
 
 # IPv6
 bot = BotClient('thisIsARealPerson', 'realHuman',
                 '#test', 'fc00:1337::17', 6667)
 
+atexit.register(bot.exit_handler)
+
 # bot = BotClient('thisIsARealPerson', 'realHuman',
 #                 '#test', '::1', 6667)
 
+try:
 # running bot sequence
-if bot.connectToServer():
+    if bot.connectToServer():
+        # infinite loop to run the bot functionallity
+        while True:
 
-    # infinite loop to run the bot functionallity
-    while True:
+            # running the bot as long as connected to server
+            if bot.runBot() == False:
+                print('ERROR: CONNECTION TO SERVER LOST\n')
 
-        # running the bot as long as connected to server
-        if bot.runBot() == False:
-            print('ERROR: CONNECTION TO SERVER LOST\n')
+                # 3 attempts to reconnect to the server
+                for attempt in range(3):
+                    print('Attempt (%d), trying to reconnect to the server...\n' %
+                        (attempt+1))
 
-            # 3 attempts to reconnect to the server
-            for attempt in range(3):
-                print('Attempt (%d), trying to reconnect to the server...\n' %
-                      (attempt+1))
-
-                # delay incase required for server to restart
-                sleep(2)
-                if bot.connectToServer() != False:
-                    # connection restablished
-                    break
-                elif attempt >= 2:
-                    print('AFTER 3 ATTEMPTS THE CONNECTION COULD NOT BE ESTABLISHED')
-                    exit(1)
-                else:
-                    continue
-        else:
-            continue
-else:
-    print('\nERROR: could not connect to server')
-    print('Server IP: ' + bot.server)
-    print('Port No: %d\n' % bot.port)
+                    # delay incase required for server to restart
+                    sleep(2)
+                    if bot.connectToServer() != False:
+                        # connection restablished
+                        break
+                    elif attempt >= 2:
+                        print('AFTER 3 ATTEMPTS THE CONNECTION COULD NOT BE ESTABLISHED')
+                        exit(1)
+                    else:
+                        continue
+            else:
+                continue
+    else:
+        print('\nERROR: could not connect to server')
+        print('Server IP: ' + bot.server)
+        print('Port No: %d\n' % bot.port)
+except KeyboardInterrupt:
+    bot.exit_handler()
