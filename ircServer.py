@@ -186,6 +186,9 @@ class IRCServer:
 
         args = args.split(' :', 1)
 
+        #TODO
+        #if args[0] = empty, that means there is no recipient return 411
+
         # checks if our chosen channel exits in the channelList
         for channel in self.channelList:
             if args[0] == channel.channelName:
@@ -196,6 +199,15 @@ class IRCServer:
                         continue
                     user.server_send(
                         f":{client.nickName}!{client.userName}@{socket.gethostname()} PRIVMSG {args[0]} :{args[1]}\r\n")
+
+        #checks if user is in clientList
+        for user in self.clientList:
+            #if the recipient is the user we are looking for
+            if args[0] == user.nickName:
+                #send private message to our recipient
+                user.server_send(
+                    f":{client.nickName}!{client.realName}@{socket.gethostname()} PRIVMSG {args[0]} {args[1]}\r\n")
+        
 
     # handler function for joining a channel
     def joinHandler(self, client, channelName):
