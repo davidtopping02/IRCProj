@@ -13,8 +13,6 @@ from _thread import *
 import time
 
 # Internet Relay Server class that contains the basic functionallity
-
-
 class IRCServer:
     def __init__(self, hostPort, hostIP, connectedClients):
         self.serverName = 'G6-IRCServer'
@@ -28,10 +26,8 @@ class IRCServer:
         self.serverSocket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
     # Starts server on specified ip and port
-
     def startServer(self):
 
-        # binds socket to ip
         self.serverSocket.bind((self.hostIP, self.hostPort))
         print(f"Server Listening on {self.hostPort}")
 
@@ -60,13 +56,16 @@ class IRCServer:
     # Allows for multi-client connection, adapted from https://www.positronx.io/create-socket-server-with-multiple-clients-in-python/
     def multi_threaded_client(self, connection, threadNum):
 
+        # main loop for thread listener
         while True:
 
             # recieves data
             try:
                 data = connection.recv(2048)
             except:
+                # ends thread when conneciton closes
                 exit()
+
 
             response = (data.decode('utf-8')).split("\n")
 
@@ -77,6 +76,7 @@ class IRCServer:
                 break
             now = time.time()
 
+            # ping functionallity
             try:
                 if self.clientList[threadNum-1].lastConnectionCheck + 10 < now:
                     self.sentPing = False
@@ -106,12 +106,13 @@ class IRCServer:
                     client.server_send(
                         f":{self.serverName} PONG {self.serverName} :{line[1]}\r\n")
                     continue
-
+                
                 elif line[0] == 'PRIVMSG':
                     self.privHandler(line[1], client)
-
+                
                 elif line[0] == 'NICK':
                     self.nickHandler(client, line[1].strip('\r'))
+                
                 elif line[0] == 'USER':
                     args = line[1].split(' ')
                     # split args into username and realname
@@ -186,6 +187,7 @@ class IRCServer:
             if len(channel.channelClients) == 0:
                 self.channelList.remove(channel)
 
+        # removes the user from the client list
         for user in self.clientList:
             if client.userName == user.userName:
                 self.clientList.remove(client)
@@ -193,6 +195,12 @@ class IRCServer:
         self.connectedClients += -1
 
     def nickHandler(self, client, newNick):
+
+        if newNick.contains('#', '=', '+', '-','/','?','@',','):
+            client.server_send(
+                        f":{socket.gethostname()} 432 * {newNick} :Erroneous nickname\r\n")
+
+
 
         # storing old nick for the change of nick command
         oldNick = client.nickName
