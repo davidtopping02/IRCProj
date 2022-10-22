@@ -196,9 +196,13 @@ class IRCServer:
 
     def nickHandler(self, client, newNick):
 
-        if newNick.contains('#', '=', '+', '-','/','?','@',','):
-            client.server_send(
-                        f":{socket.gethostname()} 432 * {newNick} :Erroneous nickname\r\n")
+        invalidChars = ['#', '=', '+', '-','/','?','@',',']
+
+        for invalids in invalidChars:
+            if newNick.__contains__(invalids):
+                client.server_send(
+                            f":{socket.gethostname()} 432 * {newNick} :Erroneous nickname\r\n")
+                break
 
 
 
