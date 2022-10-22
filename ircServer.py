@@ -13,6 +13,8 @@ from _thread import *
 import time
 
 # Internet Relay Server class that contains the basic functionallity
+
+
 class IRCServer:
     def __init__(self, hostPort, hostIP, connectedClients):
         self.serverName = 'G6-IRCServer'
@@ -186,12 +188,12 @@ class IRCServer:
 
         args = args.split(' :', 1)
 
-        
         if args[0] == "":
-            user.server_send(f":{socket.gethostname()} 411 {client.nickName} :No recipient given (PRIVMSG)\r\n")
+            user.server_send(
+                f":{socket.gethostname()} 411 {client.nickName} :No recipient given (PRIVMSG)\r\n")
         if args[1] == "":
-            user.server_send(f":{socket.gethostname()} 412 {client.nickName} :No text to send\r\n")
-
+            user.server_send(
+                f":{socket.gethostname()} 412 {client.nickName} :No text to send\r\n")
 
         # checks if our chosen channel exits in the channelList
         for channel in self.channelList:
@@ -204,18 +206,18 @@ class IRCServer:
                     user.server_send(
                         f":{client.nickName}!{client.userName}@{socket.gethostname()} PRIVMSG {args[0]} :{args[1]}\r\n")
 
-        #checks if user is in clientList
+        # checks if user is in clientList
         for user in self.clientList:
-            #if the recipient is the user we are looking for
+            # if the recipient is the user we are looking for
             if args[0] == user.nickName:
-                #send private message to our recipient
+                # send private message to our recipient
                 user.server_send(
                     f":{client.nickName}!{client.realName}@{socket.gethostname()} PRIVMSG {args[0]} {args[1]}\r\n")
            # elif args[0] not in self.clientList:
             #    user.server_send(f":{socket.gethostname()} 401 {client.nickName} {args[0]} :No such nick/channel\r\n")
-        
 
     # handler function for joining a channel
+
     def joinHandler(self, client, channelName):
 
         channelExists = False
@@ -242,20 +244,20 @@ class IRCServer:
                 # checks if the channel to be joined already exists
                 if channelName.strip('\r') == channel.channelName:
                     channel.channelClients.append(client)
-                    #loop for each client in a channel
+                    # loop for each client in a channel
                     for dude in channel.channelClients:
                         msg = f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {channel.channelName}\r\n"
 
-                        #each client sends the msg individually
+                        # each client sends the msg individually
                         dude.server_send(msg)
                     channelExists = True
                 else:
                     pass
-            #if channel does not exist
+            # if channel does not exist
             if channelExists == False:
-                #create a new channel
+                # create a new channel
                 newChannel = Channel(channelName.strip('\r'))
-                #append user to channel list
+                # append user to channel list
                 newChannel.channelClients.append(client)
                 self.channelList.append(newChannel)
                 msg = f":{client.nickName}!{client.realName}@{client.clientIP} JOIN {newChannel.channelName}\r\n"
@@ -271,12 +273,12 @@ class IRCServer:
 
                 # compares channel name
                 if (channelName.split(' ')[0] == channel.channelName):
-                    if(user.nickName == client.nickName):
+                    if (user.nickName == client.nickName):
 
-                    # sends successful parting message
+                        # sends successful parting message
                         for dude in channel.channelClients:
                             dude.server_send(
-                            f":{client.nickName}!@{client.clientIP} PART {channel.channelName}\r\n")
+                                f":{client.nickName}!@{client.clientIP} PART {channel.channelName}\r\n")
 
                         # remove client from the channel list
                         channel.channelClients.remove(client)
@@ -310,10 +312,10 @@ class Client:
     def check_connection(self):
         currentTime = time.time()
         if self.startTime + 60 < currentTime and self.sentPing is False:
+            # self.sentPing = True
             message = (f"PING {socket.gethostname()}\r\n")
             self.server_send(message)
-            self.sentPing = True
-        if self.startTime + 120 < currentTime and self.gotPong is False:
+        elif self.startTime + 120 < currentTime and self.gotPong is False:
             self.disconnect()
 
     def pong_handler(self):
@@ -351,8 +353,8 @@ class Channel:
 if __name__ == "__main__":
 
     # instantiate server object and starts the server main running loop
-    #server = IRCServer(6667, "fc00:1337::17", 0)
-    server = IRCServer(6667, "::1", 0)
+    server = IRCServer(6667, "fc00:1337::17", 0)
+    # server = IRCServer(6667, "::1", 0)
     server.startServer()
     server.server_listen()
 
