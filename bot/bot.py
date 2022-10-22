@@ -8,7 +8,6 @@
 # imports
 from time import sleep
 import socket
-from server.ircServer import Channel
 import random
 from datetime import datetime
 import atexit
@@ -27,7 +26,7 @@ class BotClient:
         self.channel = Channel(channel)
 
         # load in bot facts file
-        with open('botFacts.txt', encoding='utf8') as f:
+        with open('bot/botFacts.txt', encoding='utf8') as f:
             self.botFacts = [line.rstrip('\n') for line in f]
 
         # create socket object to gain access to the server
@@ -231,6 +230,14 @@ class BotClient:
 
     def exit_handler(self):
         self.sendCMD(self, 'QUIT', ': leaving... bye xoxo')
+
+class Channel:
+    
+    def __init__(self, channelName):
+        # self.serverConnection = serverConnection
+        self.channelName = channelName
+        self.channelClients = []
+        # self.channelTopic = channelTopic
 
 
 
