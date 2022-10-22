@@ -40,8 +40,8 @@ class BotClient:
             self.netSocket.connect((self.server, self.port))
 
             # initial joining server sequence
-            self.user(self.userName)
             self.nick(self.nickName)
+            self.user(self.userName)
 
             # response handler incase the nick name is already taken
             self.responseHandler((self.getResponse()).split('\r\n')[:-1])
@@ -125,31 +125,31 @@ class BotClient:
             # ensuring line has prefix
             if line[0] == ':':
 
-                try:
-                    # format- prefix:command:args
-                    line = line.split(' ', 2)
+                # try:
+                # format- prefix:command:args
+                line = line.split(' ', 2)
 
-                    # set channel topic
-                    if line[1] == '331':
-                        pass
-                    elif line[1] == '353':
-                        self.namesHandler(line[2])
-                    elif line[1] == '433':
-                        self.repeatedNickHandler()
-                    elif line[1] == 'JOIN':
-                        self.JOINHandler(line[0], line[2])
-                    elif line[1] == 'QUIT':
-                        self.QUITHandler(line[0])
-                    elif line[1] == 'NICK':
-                        self.nickHandler(line[0], line[2])
-                    elif line[2] == self.channel.channelName + ' :!hello':
-                        self.helloHandler()
-                    elif line[2] == self.channel.channelName + ' :!slap':
-                        self.slapHandler()
-                    elif line[1] == 'PRIVMSG':
-                        self.privMsgHandler(line[0], line[1], line[2])
-                except:
-                    print('ERROR: unexpected command')
+                # set channel topic
+                if line[1] == '331':
+                    pass
+                elif line[1] == '353':
+                    self.namesHandler(line[2])
+                elif line[1] == '433':
+                    self.repeatedNickHandler()
+                elif line[1] == 'JOIN':
+                    self.JOINHandler(line[0], line[2])
+                elif line[1] == 'QUIT':
+                    self.QUITHandler(line[0])
+                elif line[1] == 'NICK':
+                    self.nickHandler(line[0], line[2])
+                elif line[2].endswith(':!hello'):
+                    self.helloHandler()
+                elif line[2].endswith(':!slap'):
+                    self.slapHandler()
+                elif line[1] == 'PRIVMSG':
+                    self.privMsgHandler(line[0], line[1], line[2])
+                # except:
+                #     print('ERROR: unexpected command')
 
     # handler for the 353 command
     def namesHandler(self, args):
@@ -187,8 +187,7 @@ class BotClient:
 
         user = prefix[1:].split('!', 1)[0]
 
-        self.privMsg(self.channel.channelName, user +
-                     ' ' + random.choice(self.botFacts))
+        self.privMsg(user, random.choice(self.botFacts))
 
     # handler for the !hello command
     def helloHandler(self):
