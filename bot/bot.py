@@ -8,9 +8,9 @@
 # imports
 from time import sleep
 import socket
-from ircServer import Channel
 import random
 from datetime import datetime
+import atexit
 
 
 class BotClient:
@@ -26,7 +26,7 @@ class BotClient:
         self.channel = Channel(channel)
 
         # load in bot facts file
-        with open('botFacts.txt', encoding='utf8') as f:
+        with open('bot/botFacts.txt', encoding='utf8') as f:
             self.botFacts = [line.rstrip('\n') for line in f]
 
         # create socket object to gain access to the server
@@ -40,8 +40,8 @@ class BotClient:
             self.netSocket.connect((self.server, self.port))
 
             # initial joining server sequence
-            self.user(self.userName)
             self.nick(self.nickName)
+            self.user(self.userName)
 
             # response handler incase the nick name is already taken
             self.responseHandler((self.getResponse()).split('\r\n')[:-1])
@@ -125,31 +125,34 @@ class BotClient:
             # ensuring line has prefix
             if line[0] == ':':
 
-                try:
-                    # format- prefix:command:args
-                    line = line.split(' ', 2)
+                # try:
+                # format- prefix:command:args
+                line = line.split(' ', 2)
 
-                    # set channel topic
-                    if line[1] == '331':
-                        pass
-                    elif line[1] == '353':
-                        self.namesHandler(line[2])
-                    elif line[1] == '433':
-                        self.repeatedNickHandler()
-                    elif line[1] == 'JOIN':
-                        self.JOINHandler(line[0], line[2])
-                    elif line[1] == 'QUIT':
-                        self.QUITHandler(line[0])
-                    elif line[1] == 'NICK':
-                        self.nickHandler(line[0], line[2])
-                    elif line[2] == self.channel.channelName + ' :!hello':
-                        self.helloHandler()
-                    elif line[2] == self.channel.channelName + ' :!slap':
-                        self.slapHandler()
-                    elif line[1] == 'PRIVMSG':
-                        self.privMsgHandler(line[0], line[1], line[2])
-                except:
-                    print('ERROR: unexpected command')
+                if line[2].endswith('\r'):
+                    line[2] = line[2].strip('\r')
+
+                # set channel topic
+                if line[1] == '331':
+                    pass
+                elif line[1] == '353':
+                    self.namesHandler(line[2])
+                elif line[1] == '433':
+                    self.repeatedNickHandler()
+                elif line[1] == 'JOIN':
+                    self.JOINHandler(line[0], line[2])
+                elif line[1] == 'QUIT':
+                    self.QUITHandler(line[0])
+                elif line[1] == 'NICK':
+                    self.nickHandler(line[0], line[2])
+                elif line[2].endswith(':!hello'):
+                    self.helloHandler()
+                elif line[2].endswith(':!slap'):
+                    self.slapHandler()
+                elif line[1] == 'PRIVMSG':
+                    self.privMsgHandler(line[0], line[1], line[2])
+                # except:
+                #     print('ERROR: unexpected command')
 
     # handler for the 353 command
     def namesHandler(self, args):
@@ -187,8 +190,7 @@ class BotClient:
 
         user = prefix[1:].split('!', 1)[0]
 
-        self.privMsg(self.channel.channelName, user +
-                     ' ' + random.choice(self.botFacts))
+        self.privMsg(user, random.choice(self.botFacts))
 
     # handler for the !hello command
     def helloHandler(self):
@@ -209,7 +211,9 @@ class BotClient:
     # handler for NICK command (if user changes nick)
     def nickHandler(self, prefix, newNick):
         oldNick = prefix.split('!')[0][1:]
-        self.channel.channelClients.remove(oldNick)
+
+        if oldNick != '':
+            self.channel.channelClients.remove(oldNick)
         self.channel.channelClients.append(newNick)
 
     # entry point for the running sequence of the bot
@@ -224,39 +228,58 @@ class BotClient:
         else:
             return False
 
+    def exit_handler(self):
+        self.sendCMD(self, 'QUIT', ': leaving... bye xoxo')
+
+class Channel:
+    
+    def __init__(self, channelName):
+        # self.serverConnection = serverConnection
+        self.channelName = channelName
+        self.channelClients = []
+        # self.channelTopic = channelTopic
+
+
 
 # IPv6
 bot = BotClient('thisIsARealPerson', 'realHuman',
                 '#test', 'fc00:1337::17', 6667)
 
+atexit.register(bot.exit_handler)
+
+# bot = BotClient('thisIsARealPerson', 'realHuman',
+#                 '#test', '::1', 6667)
+
+try:
 # running bot sequence
-if bot.connectToServer():
+    if bot.connectToServer():
+        # infinite loop to run the bot functionallity
+        while True:
 
-    # infinite loop to run the bot functionallity
-    while True:
+            # running the bot as long as connected to server
+            if bot.runBot() == False:
+                print('ERROR: CONNECTION TO SERVER LOST\n')
 
-        # running the bot as long as connected to server
-        if bot.runBot() == False:
-            print('ERROR: CONNECTION TO SERVER LOST\n')
+                # 3 attempts to reconnect to the server
+                for attempt in range(3):
+                    print('Attempt (%d), trying to reconnect to the server...\n' %
+                        (attempt+1))
 
-            # 3 attempts to reconnect to the server
-            for attempt in range(3):
-                print('Attempt (%d), trying to reconnect to the server...\n' %
-                      (attempt+1))
-
-                # delay incase required for server to restart
-                sleep(2)
-                if bot.connectToServer() != False:
-                    # connection restablished
-                    break
-                elif attempt >= 2:
-                    print('AFTER 3 ATTEMPTS THE CONNECTION COULD NOT BE ESTABLISHED')
-                    exit(1)
-                else:
-                    continue
-        else:
-            continue
-else:
-    print('\nERROR: could not connect to server')
-    print('Server IP: ' + bot.server)
-    print('Port No: %d\n' % bot.port)
+                    # delay incase required for server to restart
+                    sleep(2)
+                    if bot.connectToServer() != False:
+                        # connection restablished
+                        break
+                    elif attempt >= 2:
+                        print('AFTER 3 ATTEMPTS THE CONNECTION COULD NOT BE ESTABLISHED')
+                        exit(1)
+                    else:
+                        continue
+            else:
+                continue
+    else:
+        print('\nERROR: could not connect to server')
+        print('Server IP: ' + bot.server)
+        print('Port No: %d\n' % bot.port)
+except KeyboardInterrupt:
+    bot.exit_handler()
